@@ -1,15 +1,54 @@
 /* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setemail] = useState("");
+  const [password, setpassword] = useState("");
+  const [error, setError] = useState("");
+
+  const navigate = useNavigate();
+
+  // handle login for both user/admin
+  const handleLogin = async (role) => {
+    setError("");
+
+    try {
+      const response = await fetch("http://localhost:4000/api/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password, role }),
+      });
+
+      const data = await response.json();
+       console.log("Response data:", data);
+
+      console.log(data.token);
+      if (!response.ok) {
+        setError(data.message || "Invalid credentials");
+        return;
+      }
+      // store token or session if needed
+      localStorage.setItem("token", data.token);
+
+      // navigate based on role
+      if (role === "user") {
+        navigate("/dashboard");
+      } else if (role === "admin") {
+        navigate("/admin/dashboard");
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 relative overflow-hidden">
-      
-      {/* Animated floating background circles */}
+      {/* background circles */}
       <motion.div
         className="absolute w-72 h-72 bg-indigo-600/30 rounded-full blur-3xl top-10 left-10"
         animate={{ x: [0, 30, -30, 0], y: [0, 20, -20, 0] }}
@@ -21,19 +60,18 @@ export default function Login() {
         transition={{ repeat: Infinity, duration: 12, ease: "easeInOut" }}
       />
 
-      {/* Card Container */}
+      {/* card */}
       <motion.div
         initial={{ opacity: 0, y: 50, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="w-full max-w-md z-10"
       >
-        {/* Card */}
         <motion.div
           whileHover={{ scale: 1.02 }}
           className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-700 shadow-2xl overflow-hidden"
         >
-          {/* Header */}
+          {/* header */}
           <div className="p-6 text-center border-b border-gray-700">
             <motion.h1
               initial={{ opacity: 0, y: -20 }}
@@ -53,9 +91,9 @@ export default function Login() {
             </motion.p>
           </div>
 
-          {/* Form */}
+          {/* form */}
           <div className="p-6">
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -64,6 +102,8 @@ export default function Login() {
                 <motion.input
                   whileFocus={{ scale: 1.02 }}
                   type="email"
+                  value={email}
+                  onChange={(e) => setemail(e.target.value)}
                   placeholder="you@example.com"
                   className="w-full px-4 py-3 rounded-lg bg-gray-800 text-gray-200 border border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-500 outline-none transition"
                 />
@@ -78,6 +118,8 @@ export default function Login() {
                   <motion.input
                     whileFocus={{ scale: 1.02 }}
                     type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setpassword(e.target.value)}
                     placeholder="••••••••"
                     className="w-full px-4 py-3 rounded-lg bg-gray-800 text-gray-200 border border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-500 outline-none transition"
                   />
@@ -91,21 +133,33 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Submit Button */}
-              <motion.div
-                whileHover={{ scale: 1.05, boxShadow: "0px 0px 20px #6366f1" }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link
-                  to="/dashboard"
-                  className="w-full block text-center py-3 rounded-lg font-semibold text-lg bg-indigo-600 text-white shadow-lg transition no-underline"
+              {/* Error */}
+              {error && (
+                <p className="text-red-500 text-sm font-medium">{error}</p>
+              )}
+
+              {/* Buttons */}
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <button
+                  type="button"
+                  onClick={() => handleLogin("user")}
+                  className="w-full block text-center py-3 rounded-lg font-semibold text-lg bg-indigo-600 text-white shadow-lg transition"
                 >
-                  SIGN IN
-                </Link>
+                  SIGN IN AS USER
+                </button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <button
+                  type="button"
+                  onClick={() => handleLogin("admin")}
+                  className="w-full block text-center py-3 rounded-lg font-semibold text-lg bg-yellow-600 text-white shadow-lg transition"
+                >
+                  SIGN IN AS ADMIN
+                </button>
               </motion.div>
             </form>
 
-            {/* Footer Links */}
+            {/* Footer */}
             <div className="mt-6 text-center space-y-2">
               <motion.p
                 initial={{ opacity: 0 }}
