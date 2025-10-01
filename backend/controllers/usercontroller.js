@@ -50,8 +50,7 @@ export const login = async (req, res) => {
 
     });
 
-
-    res.json({ message: 'Login successful.', token });
+    res.json({ message: 'Login successful.', token, email: user.email, role: user.role });
 };
 
 export const logout = (req, res) => {
@@ -91,5 +90,24 @@ export const createInvoice = async (req, res) => {
     console.error("Error creating invoice:", error);
     res.status(500).json({ message: "Failed to create invoice", error: error.message });
   }
+};
+
+export const bills = async (req, res) => {
+    try {
+        console.log("here");
+        const userId = req.user._id;
+        // const data = await Invoice.find({ createdBy: userId });
+        const data = await Invoice.find({ createdBy: userId }); // sab invoices dikhenge
+
+        console.log(data);
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: "No invoices found" });
+        }
+
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error("Error fetching invoices:", error);
+        return res.status(500).json({ message: "Server error" });
+    }
 };
 

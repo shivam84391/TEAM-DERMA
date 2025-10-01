@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../context/UserContext"; // ✅ import context
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,6 +11,7 @@ export default function Login() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
+  const { setUser } = useUser(); // ✅ context setter
 
   // handle login for both user/admin
   const handleLogin = async (role) => {
@@ -25,23 +27,33 @@ export default function Login() {
       });
 
       const data = await response.json();
-       console.log("Response data:", data);
+      console.log("Response data:", data);
 
-      console.log(data.token);
       if (!response.ok) {
         setError(data.message || "Invalid credentials");
         return;
       }
-      // store token or session if needed
-      localStorage.setItem("token", data.token);
 
-      // navigate based on role
+      // ✅ Save in localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ email: data.email, role: data.role })
+      );
+
+      // ✅ Refresh UserContext from localStorage
+      const savedUser = JSON.parse(localStorage.getItem("user"));
+      console.log("Saved user from localStorage:", savedUser);
+      setUser(savedUser);
+
+      // ✅ navigate based on role
       if (role === "user") {
         navigate("/dashboard");
       } else if (role === "admin") {
         navigate("/admin/dashboard");
       }
     } catch (err) {
+      console.error(err);
       setError("Something went wrong. Please try again.");
     }
   };

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ClipboardDocumentListIcon,
@@ -15,8 +15,9 @@ import {
   HomeIcon,
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
+import { useUser } from "../context/UserContext.jsx";
 
-const stats = [
+const initialStats = [
   { name: "Total Invoices", value: 0, icon: ClipboardDocumentListIcon, color: "text-purple-400" },
   { name: "Approved Invoices", value: 0, icon: CheckCircleIcon, color: "text-green-400" },
   { name: "Pending Invoices", value: 0, icon: ClockIcon, color: "text-yellow-400" },
@@ -31,9 +32,97 @@ const sidebarLinks = [
 ];
 
 export default function Dashboard() {
+  const { user } = useUser();
+  const [sets, setSets] = useState([]);
+  const [stats, setStats] = useState(initialStats);
+  const [earnings, setEarnings] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const fetchBills = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:4000/api/users/bills", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+
+      // Group by setNumber
+      const grouped = {};
+      data.forEach((invoice) => {
+        const setNum = invoice.setNumber ?? invoice.setNumber?.toString() ?? "unknown";
+        if (!grouped[setNum]) {
+          grouped[setNum] = {
+            setNumber: setNum,
+            total: 0,
+            approved: 0,
+            pending: 0,
+            rejected: 0,
+            created: invoice.createdAt,
+          };
+        }
+
+        grouped[setNum].total++;
+        const status = (invoice.status || "").toString();
+        if (status === "Approved") grouped[setNum].approved++;
+        else if (status === "Pending") grouped[setNum].pending++;
+        else if (status === "Rejected") grouped[setNum].rejected++;
+
+        // keep earliest created date for the set
+        if (invoice.createdAt && new Date(invoice.createdAt) < new Date(grouped[setNum].created)) {
+          grouped[setNum].created = invoice.createdAt;
+        }
+      });
+
+      setSets(Object.values(grouped));
+
+      // Update stats
+      const total = Array.isArray(data) ? data.length : 0;
+      const approvedCount = data.filter((d) => (d.status || "") === "Approved").length;
+      const pendingCount = data.filter((d) => (d.status || "") === "Pending").length;
+      const rejectedCount = data.filter((d) => (d.status || "") === "Rejected").length;
+
+      setStats([
+        { ...initialStats[0], value: total },
+        { ...initialStats[1], value: approvedCount },
+        { ...initialStats[2], value: pendingCount },
+        { ...initialStats[3], value: rejectedCount },
+      ]);
+
+      // Try to compute earnings from common fields, fallback to 0
+      const totalEarnings = data.reduce((sum, inv) => {
+        if (typeof inv.totalAmount === "number") return sum + inv.totalAmount;
+        if (typeof inv.total === "number") return sum + inv.total;
+        if (Array.isArray(inv.products)) {
+          const pSum = inv.products.reduce((s, p) => {
+            const price = p.price ?? p.rate ?? p.amount ?? 0;
+            const qty = p.quantity ?? p.qty ?? 1;
+            return s + price * qty;
+          }, 0);
+          return sum + pSum;
+        }
+        return sum;
+      }, 0);
+      setEarnings(totalEarnings);
+    } catch (err) {
+      console.error("Error fetching bills:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBills();
+  }, []);
+
   return (
     <div className="relative flex h-screen text-gray-100 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] overflow-hidden">
-      {/* Background Glow */}
+      {/* Background glows */}
       <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/30 rounded-full blur-[180px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-indigo-600/30 rounded-full blur-[180px]" />
 
@@ -57,20 +146,27 @@ export default function Dashboard() {
           </nav>
         </div>
 
-        {/* ✅ Logout Section */}
         <div className="p-4 border-t border-white/10 text-sm">
           <div className="mb-2 font-semibold">Admin User</div>
-          <Link to="/" className="flex items-center space-x-2 text-red-400 hover:text-red-500">
-            <ArrowRightOnRectangleIcon className="h-4 w-4" />
-            <span>Logout</span>
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center space-x-2 text-red-400 hover:text-red-500">
+              <ArrowRightOnRectangleIcon className="h-4 w-4" />
+              <span>Logout</span>
+            </Link>
+            <button
+              onClick={fetchBills}
+              className="ml-2 px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="relative z-10 flex-1 overflow-y-auto p-6">
         {/* Top Bar */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <div className="flex items-center space-x-4">
             <div className="relative">
@@ -91,7 +187,7 @@ export default function Dashboard() {
         </div>
 
         <p className="text-gray-300 mb-8">
-          Welcome back, <span className="font-semibold text-white">Admin User</span> 🚀
+          Welcome back, <span className="font-semibold text-white">{user?.email ?? "User"}</span> 🚀
         </p>
 
         {/* Stats */}
@@ -103,7 +199,7 @@ export default function Dashboard() {
               whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
+              transition={{ delay: idx * 0.08 }}
               className="p-5 bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 shadow-lg"
             >
               <div className="flex justify-between items-center">
@@ -130,7 +226,11 @@ export default function Dashboard() {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="text-gray-400 text-base">Total Earnings</h3>
-              <p className="text-3xl font-bold mt-1 text-white">₹0.00</p>
+              <p className="text-3xl font-bold mt-1 text-white">
+                {earnings > 0
+                  ? earnings.toLocaleString("en-IN", { style: "currency", currency: "INR" })
+                  : "₹0.00"}
+              </p>
               <p className="text-sm text-green-400 mt-2">↑ 0.00% from last month</p>
             </div>
             <div className="bg-purple-500/10 p-4 rounded-lg text-purple-400">
@@ -156,11 +256,40 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="text-gray-400 text-center">
-                  <td className="py-4 px-4" colSpan={7}>
-                    No data available
-                  </td>
-                </tr>
+                {loading ? (
+                  <tr className="text-gray-400 text-center">
+                    <td className="py-4 px-4" colSpan={7}>
+                      Loading...
+                    </td>
+                  </tr>
+                ) : sets.length > 0 ? (
+                  sets.map((s, idx) => (
+                    <tr key={idx} className="border-b border-white/10 text-gray-300">
+                      <td className="py-3 px-4">{s.setNumber}</td>
+                      <td className="py-3 px-4">{s.total}</td>
+                      <td className="py-3 px-4 text-green-400">{s.approved}</td>
+                      <td className="py-3 px-4 text-yellow-400">{s.pending}</td>
+                      <td className="py-3 px-4 text-red-400">{s.rejected}</td>
+                      <td className="py-3 px-4">
+                        {s.created ? new Date(s.created).toLocaleDateString() : "-"}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Link
+                          to={`/invoice-set/${encodeURIComponent(s.setNumber)}`}
+                          className="px-3 py-1 text-xs bg-purple-600 rounded-lg hover:bg-purple-700"
+                        >
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr className="text-gray-400 text-center">
+                    <td className="py-4 px-4" colSpan={7}>
+                      No data available
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

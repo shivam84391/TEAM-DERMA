@@ -5,7 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import CreateInvoice from "./pages/CreateInvoice";
 import InvoiceHistory from "./pages/InvoiceHistory";
 import AdminDashboard from "./pages/AdminDashboard";
-import ProtectedRoute from "../components/ProtectedRoute.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 export default function App() {
   return (
