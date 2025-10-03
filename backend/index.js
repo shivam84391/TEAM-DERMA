@@ -6,6 +6,7 @@ import database from "./database/index.js";
 
 // Routes import
 import userRoutes from "./router/user.routes.js";
+import adminRoutes from "./router/admin.routes.js"; 
 
 dotenv.config();
 
@@ -21,13 +22,14 @@ app.use(
     credentials: true,               // Allow cookies to be sent
   })
 );
-
+// app.use("./static", express.static(path.join(__dirname, "static")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Mount routes
 app.use("/api/users", userRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Default route
 app.get("/", (req, res) => {

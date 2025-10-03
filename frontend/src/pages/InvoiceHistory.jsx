@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   MagnifyingGlassIcon,
@@ -11,7 +11,38 @@ import {
 import { Link } from "react-router-dom";
 
 export default function InvoiceHistory() {
-  const invoices = []; // later replace with API data
+  const [invoices, setInvoices] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // fetch invoices by setNumber from backend
+  const handleSearch = async () => {
+    if (!search.trim()) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `http://localhost:4000/api/users/search-bills/${search}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch invoices");
+      const data = await res.json();
+
+      // backend returns single object → wrap in array
+      setInvoices(Array.isArray(data) ? data : [data]);
+    } catch (err) {
+      console.error(err);
+      setInvoices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative flex h-screen text-gray-100 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] overflow-hidden">
@@ -24,13 +55,21 @@ export default function InvoiceHistory() {
         {/* Title + Search */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Invoice History</h1>
-          <div className="relative">
+          <div className="relative flex">
             <input
               type="text"
-              placeholder="Search invoices..."
+              placeholder="Enter Set No..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="pl-10 pr-4 py-2 rounded-full bg-white/10 border border-white/20 placeholder-gray-400 text-gray-100 focus:ring-2 focus:ring-purple-400 outline-none"
             />
             <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-2 text-gray-400" />
+            <button
+              onClick={handleSearch}
+              className="ml-3 px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-700 transition"
+            >
+              Search
+            </button>
           </div>
         </div>
 
@@ -48,29 +87,37 @@ export default function InvoiceHistory() {
                   <th className="py-3 px-4">Set No</th>
                   <th className="py-3 px-4">Invoice No</th>
                   <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Category</th>
+                  <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4">Date & Time</th>
                   <th className="py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {invoices.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="py-6 text-center text-gray-400">
+                      Searching...
+                    </td>
+                  </tr>
+                ) : invoices.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-6 text-center text-gray-400">
                       <div className="flex flex-col items-center">
                         <DocumentTextIcon className="h-10 w-10 text-gray-500 mb-2" />
-                        <p>No invoices found in your account</p>
+                        <p>No invoices found</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   invoices.map((inv, idx) => (
                     <tr key={idx} className="hover:bg-white/5 text-gray-200">
-                      <td className="py-3 px-4">{inv.setNo}</td>
-                      <td className="py-3 px-4">{inv.invoiceNo}</td>
-                      <td className="py-3 px-4">{inv.customer}</td>
-                      <td className="py-3 px-4">{inv.category}</td>
-                      <td className="py-3 px-4">{inv.date}</td>
+                      <td className="py-3 px-4">{inv.setNumber}</td>
+                      <td className="py-3 px-4">{inv.invoiceNumber}</td>
+                      <td className="py-3 px-4">{inv.customerName}</td>
+                      <td className="py-3 px-4">{inv.status}</td>
+                      <td className="py-3 px-4">
+                        {new Date(inv.createdAt).toLocaleString()}
+                      </td>
                       <td className="py-3 px-4 flex space-x-3">
                         <button className="text-blue-400 hover:text-blue-500">
                           <EyeIcon className="h-5 w-5" />

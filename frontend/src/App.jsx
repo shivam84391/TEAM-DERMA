@@ -6,6 +6,8 @@ import CreateInvoice from "./pages/CreateInvoice";
 import InvoiceHistory from "./pages/InvoiceHistory";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import AdminInvoices from "./pages/AdminInvoices.jsx";
+import Admincal from "./pages/Admincal.jsx";
 
 export default function App() {
   return (
@@ -43,6 +45,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute>
+            <AdminInvoices/>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/invoices"
+        element={
+          <ProtectedRoute>
+            <Admincal/>
           </ProtectedRoute>
         }
       />

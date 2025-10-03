@@ -10,7 +10,6 @@ import {
   MagnifyingGlassIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  PlusCircleIcon,
   FolderIcon,
   HomeIcon,
   UserGroupIcon,
@@ -28,8 +27,8 @@ const stats = [
 
 const sidebarLinks = [
   { name: "Dashboard", icon: HomeIcon, path: "/admin/dashboard" },
-  { name: "Invoices", icon: FolderIcon, path: "/invoices" },
-  { name: "Total Users", icon: UserGroupIcon, path: "/users" },
+  { name: "Invoices", icon: FolderIcon, path: "/admin/invoices" },
+  { name: "Total Users", icon: UserGroupIcon, path: "/admin/users" },
   { name: "Reports", icon: DocumentChartBarIcon, path: "/reports" },
   { name: "Approve Set", icon: CheckCircleIcon, path: "/approve-set" },
   { name: "Pending Users", icon: ClockIcon, path: "/pending-users" },
@@ -37,24 +36,60 @@ const sidebarLinks = [
   { name: "Settings", icon: Cog6ToothIcon, path: "/admin/settings" },
 ];
 
-const recentInvoices = [
-  { id: "#NV398336", amount: "₹2,275.00", date: "Sep 30, 2025", email: "FAZALNAIKWADI2712@GMAIL.COM", status: "Pending" },
-  { id: "#NV402190", amount: "₹3,516.00", date: "Sep 30, 2025", email: "IRAMMUJAWAR09@GMAIL.COM", status: "Pending" },
-  { id: "#NV399318", amount: "₹17,153.00", date: "Sep 30, 2025", email: "TAJFOODPLAZA@GMAIL.COM", status: "Pending" },
-  { id: "#NV401832", amount: "₹23,716.00", date: "Sep 30, 2025", email: "FATMAANSARI442@GMAIL.COM", status: "Pending" },
-  { id: "#NV398577", amount: "₹1,910.00", date: "Sep 30, 2025", email: "NAZMAKHAN03009@GMAIL.COM", status: "Pending" },
-];
-
 export default function AdminDashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [customers, setCustomers] = useState([]);
+  const [recentInvoices, setRecentInvoices] = useState([]);
 
+  // Update clock every second
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch customers and their invoices
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:4000/api/admin/users", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch customers");
+        const data = await res.json();
+        setCustomers(data);
+      } catch (err) {
+        console.error("Error fetching customers:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Flatten invoices from all customers and sort
+  useEffect(() => {
+    if (customers.length === 0) return;
+
+    const flattened = [];
+    customers.forEach((customer) => {
+      customer.invoices.forEach((inv) => {
+        flattened.push({
+          id: inv._id, // or invoiceNumber if available
+          user: customer.name || customer.email,
+          date: inv.date ? new Date(inv.date) : null, // keep as Date object
+          status: inv.status || "Pending",
+          setNumber: inv.setNumber || "-",
+        });
+      });
+    });
+
+    // Sort by date (latest first)
+    flattened.sort((a, b) => (b.date || 0) - (a.date || 0));
+    setRecentInvoices(flattened.slice(0, 5));
+  }, [customers]);
 
   return (
     <div className="relative flex h-screen text-gray-100 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] overflow-hidden">
@@ -82,7 +117,7 @@ export default function AdminDashboard() {
           </nav>
         </div>
 
-        {/* ✅ Logout Section */}
+        {/* Logout Section */}
         <div className="p-4 border-t border-white/10 text-sm">
           <div className="mb-2 font-semibold">Admin User</div>
           <Link to="/" className="flex items-center space-x-2 text-red-400 hover:text-red-500">
@@ -96,15 +131,10 @@ export default function AdminDashboard() {
       <main className="relative z-10 flex-1 overflow-y-auto p-6">
         {/* Top Bar */}
         <div className="flex justify-between items-center mb-8">
-          {/* Left side: Dashboard + Time */}
           <div className="flex items-center space-x-6">
             <h1 className="text-3xl font-bold">Dashboard</h1>
-            <span className="text-gray-300 text-sm">
-              {currentTime.toLocaleTimeString()}
-            </span>
+            <span className="text-gray-300 text-sm">{currentTime.toLocaleTimeString()}</span>
           </div>
-
-          {/* Right side: Search + Notifications */}
           <div className="flex items-center space-x-4">
             <div className="relative">
               <input
@@ -179,26 +209,41 @@ export default function AdminDashboard() {
               <thead>
                 <tr className="bg-white/5 text-gray-300">
                   <th className="py-3 px-4">Invoice</th>
-                  <th className="py-3 px-4">Amount</th>
+                  <th className="py-3 px-4">User</th>
                   <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Email</th>
                   <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Set</th>
                 </tr>
               </thead>
               <tbody>
                 {recentInvoices.map((inv, idx) => (
                   <tr key={idx} className="border-t border-white/10 text-gray-300">
                     <td className="py-3 px-4">{inv.id}</td>
-                    <td className="py-3 px-4">{inv.amount}</td>
-                    <td className="py-3 px-4">{inv.date}</td>
-                    <td className="py-3 px-4">{inv.email}</td>
+                    <td className="py-3 px-4">{inv.user}</td>
+                    <td className="py-3 px-4">{inv.date ? inv.date.toLocaleDateString() : "-"}</td>
                     <td className="py-3 px-4">
-                      <span className="px-3 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-300">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs ${
+                          inv.status === "Approved"
+                            ? "bg-green-500/20 text-green-300"
+                            : inv.status === "Rejected"
+                            ? "bg-red-500/20 text-red-300"
+                            : "bg-yellow-500/20 text-yellow-300"
+                        }`}
+                      >
                         {inv.status}
                       </span>
                     </td>
+                    <td className="py-3 px-4">{inv.setNumber}</td>
                   </tr>
                 ))}
+                {recentInvoices.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="text-gray-400 text-center py-4">
+                      No invoices found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

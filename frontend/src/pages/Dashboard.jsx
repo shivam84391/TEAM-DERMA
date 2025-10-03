@@ -129,9 +129,15 @@ export default function Dashboard() {
       {/* Sidebar */}
       <aside className="relative z-10 w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col justify-between">
         <div>
-          <div className="p-6 text-center font-bold text-2xl tracking-wide text-white">
-            Byte<span className="text-purple-400">Sense</span>
-          </div>
+          <div className="p-6 text-center">
+ <div className="p-3 text-center">
+  <img
+    src="public\logos.png"
+    alt="ZENTRASense Logo"
+    className="max-h-32 w-auto object-contain scale-130"
+  />
+</div>
+</div>
           <nav className="mt-4 space-y-2">
             {sidebarLinks.map((item) => (
               <Link
@@ -147,7 +153,7 @@ export default function Dashboard() {
         </div>
 
         <div className="p-4 border-t border-white/10 text-sm">
-          <div className="mb-2 font-semibold">Admin User</div>
+          <div className="mb-2 font-semibold">{user.email}</div>
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center space-x-2 text-red-400 hover:text-red-500">
               <ArrowRightOnRectangleIcon className="h-4 w-4" />

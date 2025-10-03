@@ -85,14 +85,14 @@ export default function Login() {
         >
           {/* header */}
           <div className="p-6 text-center border-b border-gray-700">
-            <motion.h1
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="text-3xl font-extrabold text-white tracking-wide"
-            >
-              Welcome Back
-            </motion.h1>
+             <div className="p-3 text-center">
+  <img
+    src="public\logos.png"
+    alt="ZENTRASense Logo"
+    className="max-h-32 w-auto object-contain scale-110"
+  />
+</div>
+
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
