@@ -8,6 +8,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AdminInvoices from "./pages/AdminInvoices.jsx";
 import Admincal from "./pages/Admincal.jsx";
+import Register from "./pages/Register.jsx";
+import UserDetails from "./pages/UserDetails.jsx";
+import UserReport from "./pages/UserReport.jsx";
 
 export default function App() {
   return (
@@ -64,6 +67,30 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/add-user"
+        element={
+          <ProtectedRoute>
+            <Register/>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/customer/:id"
+        element={
+          <ProtectedRoute>
+            <UserDetails/>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+      path="/admin/reports"
+      element={
+        <ProtectedRoute>
+          <UserReport/>
+        </ProtectedRoute>
+      }
+    />
     </Routes>
   );
 }

@@ -4,6 +4,11 @@ import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
   {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     email: {
       type: String,
       required: true,
@@ -11,7 +16,32 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    password: { type: String, required: true },
+    phone: {
+      type: String,
+      required: true,
+    },
+    address: {
+      type: String,
+      required: true,
+    },
+    cityState: {
+      type: String,
+      required: true,
+    },
+    pincode: {
+      type: String,
+      required: true,
+    },
+    memberSince: {
+      type: Date,
+      default: Date.now, // registration date
+    },
+
+    // Authentication fields
+    password: {
+      type: String,
+      required: true,
+    },
     role: {
       type: String,
       enum: ["user", "admin"],
@@ -21,7 +51,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password before saving
+// Password hash
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
@@ -34,7 +64,7 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Compare entered password with hashed password
+// Password match method
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.password);
 };

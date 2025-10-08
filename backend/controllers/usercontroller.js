@@ -5,22 +5,42 @@ import Invoice from '../models/invoices_schema.js';
 // Adjust path as needed
 
 // Register Controller
+//import User from "../models/User.js";
+
 export const register = async (req, res) => {
-    const { email, password, role } = req.body;
-    if (!email || !password || !role) {
-        return res.status(400).json({ message: 'Email, password, and role are required.' });
+  try {
+    const { name, email, phone, address, cityState, pincode, password, role } = req.body;
+
+    // Validation
+    if (!name || !email || !phone || !address || !cityState || !pincode || !password || !role) {
+      return res.status(400).json({ message: "All fields are required." });
     }
 
-    const existingUser = await User.findOne({ email, role });
+    // Check if user already exists (email unique hona chahiye)
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-        return res.status(409).json({ message: 'User already exists with this email and role.' });
+      return res.status(409).json({ message: "User already exists with this email." });
     }
 
-    // const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ email, password, role });
+    // Create user (password hashing schema me ho raha hai)
+    const user = new User({ name, email, phone, address, cityState, pincode, password, role });
     await user.save();
-    res.status(201).json({ message: 'User registered successfully.' });
+
+    res.status(201).json({
+      message: "User registered successfully.",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Register Error:", error.message);
+    res.status(500).json({ message: "Server Error. Please try again later." });
+  }
 };
+
 
 export const login = async (req, res) => {
     const { email, password, role } = req.body;

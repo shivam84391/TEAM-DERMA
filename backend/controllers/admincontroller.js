@@ -20,7 +20,7 @@ export const getAllCustomers = async (req, res) => {
       return {
         _id: c._id,
         name: c.email,
-        contact: c.contact || "",
+        contact: c.phone || "",
         invoices: userInvoices,
       };
     });
@@ -133,5 +133,71 @@ export const updateSetStatus = async (req, res) => {
   } catch (err) {
     console.error("Error updating set status:", err);
     res.status(500).json({ error: "Server error" });
+  }
+};
+export const getUserDetailsWithInvoices = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Fetch user details
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Fetch all invoices for this user
+    const invoices = await Invoice.find({ createdBy: userId }).sort({ createdAt: -1 });
+
+    // Calculate summary stats
+    const totalInvoices = invoices.length;
+    const approvedCount = invoices.filter((i) => i.status === "Approved").length;
+    const pendingCount = invoices.filter((i) => i.status === "Pending").length;
+    const rejectedCount = invoices.filter((i) => i.status === "Rejected").length;
+    const totalAmount = invoices.reduce((sum, inv) => {
+      const subtotal = inv.products.reduce(
+        (acc, p) => acc + (p.rate * p.qty - p.discount),
+        0
+      );
+      return sum + subtotal;
+    }, 0);
+
+    return res.status(200).json({
+      user,
+      stats: {
+        totalInvoices,
+        approvedCount,
+        pendingCount,
+        rejectedCount,
+        totalAmount,
+      },
+      invoices,
+    });
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+export const updateInvoiceStatus = async (req, res) => {
+  try {
+    const { id } = req.params; // invoice ID
+    const { status } = req.body; // new status: "Approved", "Rejected", etc.
+
+    const validStatuses = ["Approved", "Rejected", "Pending", "On Hold"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const invoice = await Invoice.findById(id);
+    if (!invoice) {
+      return res.status(404).json({ message: "Invoice not found" });
+    }
+
+    invoice.status = status;
+    await invoice.save();
+
+    res.status(200).json({ message: `Invoice updated to ${status}`, invoice });
+  } catch (error) {
+    console.error("Error updating invoice status:", error);
+    res.status(500).json({ message: "Server error", error });
   }
 };

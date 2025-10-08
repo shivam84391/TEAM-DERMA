@@ -49,13 +49,14 @@ export default function Dashboard() {
           Authorization: `Bearer ${token}`,
         },
       });
+
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
 
-      // Group by setNumber
+      // Group invoices by setNumber
       const grouped = {};
       data.forEach((invoice) => {
-        const setNum = invoice.setNumber ?? invoice.setNumber?.toString() ?? "unknown";
+        const setNum = invoice.setNumber ?? "unknown";
         if (!grouped[setNum]) {
           grouped[setNum] = {
             setNumber: setNum,
@@ -67,25 +68,25 @@ export default function Dashboard() {
           };
         }
 
-        grouped[setNum].total++;
-        const status = (invoice.status || "").toString();
-        if (status === "Approved") grouped[setNum].approved++;
-        else if (status === "Pending") grouped[setNum].pending++;
-        else if (status === "Rejected") grouped[setNum].rejected++;
+        grouped[setNum].total += 1;
+        const status = (invoice.status || "").toLowerCase();
+        if (status === "approved") grouped[setNum].approved += 1;
+        else if (status === "pending") grouped[setNum].pending += 1;
+        else if (status === "rejected") grouped[setNum].rejected += 1;
 
-        // keep earliest created date for the set
         if (invoice.createdAt && new Date(invoice.createdAt) < new Date(grouped[setNum].created)) {
           grouped[setNum].created = invoice.createdAt;
         }
       });
 
-      setSets(Object.values(grouped));
+      const setsArr = Object.values(grouped);
+      setSets(setsArr);
 
-      // Update stats
-      const total = Array.isArray(data) ? data.length : 0;
-      const approvedCount = data.filter((d) => (d.status || "") === "Approved").length;
-      const pendingCount = data.filter((d) => (d.status || "") === "Pending").length;
-      const rejectedCount = data.filter((d) => (d.status || "") === "Rejected").length;
+      // ✅ Stats calculation from setsArr
+      const total = setsArr.reduce((acc, s) => acc + Number(s.total || 0), 0);
+      const approvedCount = setsArr.reduce((acc, s) => acc + Number(s.approved || 0), 0);
+      const pendingCount = setsArr.reduce((acc, s) => acc + Number(s.pending || 0), 0);
+      const rejectedCount = setsArr.reduce((acc, s) => acc + Number(s.rejected || 0), 0);
 
       setStats([
         { ...initialStats[0], value: total },
@@ -93,28 +94,33 @@ export default function Dashboard() {
         { ...initialStats[2], value: pendingCount },
         { ...initialStats[3], value: rejectedCount },
       ]);
-
-      // Try to compute earnings from common fields, fallback to 0
-      const totalEarnings = data.reduce((sum, inv) => {
-        if (typeof inv.totalAmount === "number") return sum + inv.totalAmount;
-        if (typeof inv.total === "number") return sum + inv.total;
-        if (Array.isArray(inv.products)) {
-          const pSum = inv.products.reduce((s, p) => {
-            const price = p.price ?? p.rate ?? p.amount ?? 0;
-            const qty = p.quantity ?? p.qty ?? 1;
-            return s + price * qty;
-          }, 0);
-          return sum + pSum;
-        }
-        return sum;
-      }, 0);
-      setEarnings(totalEarnings);
     } catch (err) {
       console.error("Error fetching bills:", err);
     } finally {
       setLoading(false);
     }
   };
+
+  // ✅ Earnings calculation based on sets change
+  useEffect(() => {
+    let calculatedEarnings = 0;
+
+    sets.forEach((set) => {
+      const totalInv = Number(set.total || 0);
+      const invalidInv = Number(set.rejected || 0);
+      const validInv = totalInv - invalidInv;
+
+      if (validInv >= 20 && invalidInv <= 1) {
+        calculatedEarnings += 100;
+      } else if (invalidInv === 2 || invalidInv === 3) {
+        calculatedEarnings += validInv * 2;
+      } else if (invalidInv >= 4) {
+        calculatedEarnings += 0;
+      }
+    });
+
+    setEarnings(calculatedEarnings);
+  }, [sets]);
 
   useEffect(() => {
     fetchBills();
@@ -130,14 +136,14 @@ export default function Dashboard() {
       <aside className="relative z-10 w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col justify-between">
         <div>
           <div className="p-6 text-center">
- <div className="p-3 text-center">
-  <img
-    src="public\logos.png"
-    alt="ZENTRASense Logo"
-    className="max-h-32 w-auto object-contain scale-130"
-  />
-</div>
-</div>
+            <div className="p-3 text-center">
+              <img
+                src="/logos.png"
+                alt="ZENTRASense Logo"
+                className="max-h-32 w-auto object-contain scale-130"
+              />
+            </div>
+          </div>
           <nav className="mt-4 space-y-2">
             {sidebarLinks.map((item) => (
               <Link
@@ -210,7 +216,7 @@ export default function Dashboard() {
             >
               <div className="flex justify-between items-center">
                 <div>
-                  <div className="text-3xl font-bold">{stat.value}</div>
+                  <div className="text-3xl font-bold text-white">{stat.value ?? 0}</div>
                   <div className="text-gray-400 mt-1">{stat.name}</div>
                 </div>
                 <div className={`p-3 rounded-lg ${stat.color}`}>

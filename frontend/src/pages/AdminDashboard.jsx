@@ -18,21 +18,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 
-const stats = [
-  { name: "Total Invoices", value: 16539, icon: ClipboardDocumentListIcon, color: "text-purple-400" },
-  { name: "Approved", value: 1928, icon: CheckCircleIcon, color: "text-green-400" },
-  { name: "Pending", value: 11655, icon: ClockIcon, color: "text-yellow-400" },
-  { name: "Rejected", value: 2198, icon: XCircleIcon, color: "text-red-400" },
-];
-
 const sidebarLinks = [
   { name: "Dashboard", icon: HomeIcon, path: "/admin/dashboard" },
   { name: "Invoices", icon: FolderIcon, path: "/admin/invoices" },
   { name: "Total Users", icon: UserGroupIcon, path: "/admin/users" },
-  { name: "Reports", icon: DocumentChartBarIcon, path: "/reports" },
+  { name: "Reports", icon: DocumentChartBarIcon, path: "/admin/reports" },
   { name: "Approve Set", icon: CheckCircleIcon, path: "/approve-set" },
   { name: "Pending Users", icon: ClockIcon, path: "/pending-users" },
-  { name: "Help Center", icon: ChatBubbleOvalLeftEllipsisIcon, path: "/help-center" },
+  { name: "Add User", icon: UserGroupIcon, path: "/add-user" },
   { name: "Settings", icon: Cog6ToothIcon, path: "/admin/settings" },
 ];
 
@@ -40,6 +33,12 @@ export default function AdminDashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [customers, setCustomers] = useState([]);
   const [recentInvoices, setRecentInvoices] = useState([]);
+  const [statsData, setStatsData] = useState({
+    total: 0,
+    approved: 0,
+    pending: 0,
+    rejected: 0,
+  });
 
   // Update clock every second
   useEffect(() => {
@@ -69,6 +68,27 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
+  // Calculate stats dynamically
+  useEffect(() => {
+    if (customers.length === 0) return;
+
+    let total = 0,
+      approved = 0,
+      pending = 0,
+      rejected = 0;
+
+    customers.forEach((c) => {
+      c.invoices.forEach((inv) => {
+        total++;
+        if (inv.status === "Approved") approved++;
+        else if (inv.status === "Pending") pending++;
+        else if (inv.status === "Rejected") rejected++;
+      });
+    });
+
+    setStatsData({ total, approved, pending, rejected });
+  }, [customers]);
+
   // Flatten invoices from all customers and sort
   useEffect(() => {
     if (customers.length === 0) return;
@@ -77,19 +97,46 @@ export default function AdminDashboard() {
     customers.forEach((customer) => {
       customer.invoices.forEach((inv) => {
         flattened.push({
-          id: inv._id, // or invoiceNumber if available
+          id: inv._id,
           user: customer.name || customer.email,
-          date: inv.date ? new Date(inv.date) : null, // keep as Date object
+          date: inv.date ? new Date(inv.date) : null,
           status: inv.status || "Pending",
           setNumber: inv.setNumber || "-",
         });
       });
     });
 
-    // Sort by date (latest first)
     flattened.sort((a, b) => (b.date || 0) - (a.date || 0));
     setRecentInvoices(flattened.slice(0, 5));
   }, [customers]);
+
+  // ✅ Dynamic stats (style unchanged)
+  const stats = [
+    {
+      name: "Total Invoices",
+      value: statsData.total,
+      icon: ClipboardDocumentListIcon,
+      color: "text-purple-400",
+    },
+    {
+      name: "Approved",
+      value: statsData.approved,
+      icon: CheckCircleIcon,
+      color: "text-green-400",
+    },
+    {
+      name: "Pending",
+      value: statsData.pending,
+      icon: ClockIcon,
+      color: "text-yellow-400",
+    },
+    {
+      name: "Rejected",
+      value: statsData.rejected,
+      icon: XCircleIcon,
+      color: "text-red-400",
+    },
+  ];
 
   return (
     <div className="relative flex h-screen text-gray-100 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] overflow-hidden">
@@ -100,8 +147,14 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <aside className="relative z-10 w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col justify-between">
         <div>
-          <div className="p-6 text-center font-bold text-2xl tracking-wide text-white">
-            Invoice<span className="text-purple-400">System</span>
+           <div className="p-6 text-center">
+            <div className="p-3 text-center">
+              <img
+                src="/logos.png"
+                alt="ZENTRASense Logo"
+                className="max-h-32 w-auto object-contain scale-130"
+              />
+            </div>
           </div>
           <nav className="mt-4 space-y-2">
             {sidebarLinks.map((item) => (
@@ -120,7 +173,10 @@ export default function AdminDashboard() {
         {/* Logout Section */}
         <div className="p-4 border-t border-white/10 text-sm">
           <div className="mb-2 font-semibold">Admin User</div>
-          <Link to="/" className="flex items-center space-x-2 text-red-400 hover:text-red-500">
+          <Link
+            to="/"
+            className="flex items-center space-x-2 text-red-400 hover:text-red-500"
+          >
             <ArrowRightOnRectangleIcon className="h-4 w-4" />
             <span>Logout</span>
           </Link>
@@ -133,7 +189,9 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center space-x-6">
             <h1 className="text-3xl font-bold">Dashboard</h1>
-            <span className="text-gray-300 text-sm">{currentTime.toLocaleTimeString()}</span>
+            <span className="text-gray-300 text-sm">
+              {currentTime.toLocaleTimeString()}
+            </span>
           </div>
           <div className="flex items-center space-x-4">
             <div className="relative">
@@ -154,10 +212,11 @@ export default function AdminDashboard() {
         </div>
 
         <p className="text-gray-300 mb-8">
-          Welcome back, <span className="font-semibold text-white">Admin</span> 🚀
+          Welcome back, <span className="font-semibold text-white">Admin</span>{" "}
+          🚀
         </p>
 
-        {/* Stats */}
+        {/* Stats (dynamic values, same look) */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat, idx) => (
             <motion.div
@@ -203,7 +262,9 @@ export default function AdminDashboard() {
 
         {/* Recent Invoices */}
         <div className="bg-white/5 backdrop-blur-xl rounded-xl p-5 border border-white/10">
-          <h3 className="text-lg font-semibold mb-4 text-white">Recent Invoices</h3>
+          <h3 className="text-lg font-semibold mb-4 text-white">
+            Recent Invoices
+          </h3>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead>
@@ -217,10 +278,15 @@ export default function AdminDashboard() {
               </thead>
               <tbody>
                 {recentInvoices.map((inv, idx) => (
-                  <tr key={idx} className="border-t border-white/10 text-gray-300">
+                  <tr
+                    key={idx}
+                    className="border-t border-white/10 text-gray-300"
+                  >
                     <td className="py-3 px-4">{inv.id}</td>
                     <td className="py-3 px-4">{inv.user}</td>
-                    <td className="py-3 px-4">{inv.date ? inv.date.toLocaleDateString() : "-"}</td>
+                    <td className="py-3 px-4">
+                      {inv.date ? inv.date.toLocaleDateString() : "-"}
+                    </td>
                     <td className="py-3 px-4">
                       <span
                         className={`px-3 py-1 rounded-full text-xs ${
@@ -239,7 +305,10 @@ export default function AdminDashboard() {
                 ))}
                 {recentInvoices.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="text-gray-400 text-center py-4">
+                    <td
+                      colSpan="5"
+                      className="text-gray-400 text-center py-4"
+                    >
                       No invoices found.
                     </td>
                   </tr>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { PlusCircleIcon } from "@heroicons/react/24/solid";
 import { Link } from "react-router-dom";
@@ -26,6 +26,31 @@ export default function CreateInvoice() {
     state: "",
     pinCode: "",
   });
+
+  // 🚫 Disable copy/paste/cut/drag/drop/right-click globally for all inputs
+  useEffect(() => {
+    const inputs = document.querySelectorAll("input");
+
+    const preventAction = (e) => e.preventDefault();
+
+    inputs.forEach((input) => {
+      input.addEventListener("paste", preventAction);
+      input.addEventListener("copy", preventAction);
+      input.addEventListener("cut", preventAction);
+      input.addEventListener("drop", preventAction);
+      input.addEventListener("contextmenu", preventAction);
+    });
+
+    return () => {
+      inputs.forEach((input) => {
+        input.removeEventListener("paste", preventAction);
+        input.removeEventListener("copy", preventAction);
+        input.removeEventListener("cut", preventAction);
+        input.removeEventListener("drop", preventAction);
+        input.removeEventListener("contextmenu", preventAction);
+      });
+    };
+  }, []);
 
   // Handle product input changes
   const handleProductChange = (e) => {
@@ -64,7 +89,6 @@ export default function CreateInvoice() {
 
   // Submit invoice
   const handleSubmitInvoice = async () => {
-    // Validate required customer fields
     const requiredCustomerFields = ["invoiceNumber", "setNumber", "category", "name"];
     for (let key of requiredCustomerFields) {
       if (!customer[key]) {
@@ -78,7 +102,6 @@ export default function CreateInvoice() {
       return;
     }
 
-    // Prepare payload
     const invoiceJSON = {
       customerDetails: customer,
       products: products.map((p) => ({
@@ -90,7 +113,7 @@ export default function CreateInvoice() {
     };
 
     try {
-      const token = localStorage.getItem("token"); // ✅ get token from localStorage
+      const token = localStorage.getItem("token");
       if (!token) {
         alert("You are not logged in. Please login first.");
         return;
@@ -101,7 +124,7 @@ export default function CreateInvoice() {
         invoiceJSON,
         {
           headers: {
-            Authorization: `Bearer ${token}`, // send token in header
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         }
@@ -110,7 +133,6 @@ export default function CreateInvoice() {
       alert(`Invoice submitted in Set ${res.data.invoice.setNumber}`);
       console.log("Saved Invoice:", res.data.invoice);
 
-      // Reset all fields
       setCustomer({
         invoiceNumber: "",
         setNumber: "",
@@ -178,7 +200,6 @@ export default function CreateInvoice() {
             </motion.button>
           </div>
 
-          {/* Product List */}
           {products.length > 0 && (
             <div className="mt-4 overflow-x-auto">
               <table className="min-w-full border border-gray-200">
@@ -240,7 +261,6 @@ export default function CreateInvoice() {
           </motion.button>
         </motion.div>
 
-        {/* Back Button */}
         <div className="flex justify-center">
           <Link to="/dashboard">
             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-black text-white px-6 py-2 rounded-md shadow hover:bg-gray-800 transition">

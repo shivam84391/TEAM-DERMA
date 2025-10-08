@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   MagnifyingGlassIcon,
@@ -15,7 +15,34 @@ export default function InvoiceHistory() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // fetch invoices by setNumber from backend
+  // ✅ Fetch all invoices on page load
+  useEffect(() => {
+    const fetchAllInvoices = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:4000/api/users/bills", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch all invoices");
+        const data = await res.json();
+        setInvoices(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Error fetching invoices:", err);
+        setInvoices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllInvoices();
+  }, []);
+
+  // 🔍 Fetch invoices by setNumber (search)
   const handleSearch = async () => {
     if (!search.trim()) return;
     setLoading(true);
@@ -33,8 +60,6 @@ export default function InvoiceHistory() {
 
       if (!res.ok) throw new Error("Failed to fetch invoices");
       const data = await res.json();
-
-      // backend returns single object → wrap in array
       setInvoices(Array.isArray(data) ? data : [data]);
     } catch (err) {
       console.error(err);
@@ -96,7 +121,7 @@ export default function InvoiceHistory() {
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="py-6 text-center text-gray-400">
-                      Searching...
+                      Loading...
                     </td>
                   </tr>
                 ) : invoices.length === 0 ? (

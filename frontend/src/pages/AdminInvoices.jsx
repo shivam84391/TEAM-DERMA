@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MagnifyingGlassIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { Link } from "react-router-dom";
 
 export default function AdminInvoices() {
   const [search, setSearch] = useState("");
@@ -72,10 +73,10 @@ export default function AdminInvoices() {
             {filtered.length > 0 ? (
               filtered.map((c, idx) => {
                 const total = c.invoices?.length || 0;
-                const pending = c.invoices?.filter(i => i.status === "pending").length || 0;
-                const approved = c.invoices?.filter(i => i.status === "approved").length || 0;
-                const rejected = c.invoices?.filter(i => i.status === "rejected").length || 0;
-                const awaiting = c.invoices?.filter(i => i.status === "awaiting").length || 0;
+                const pending = c.invoices?.filter(i => i.status === "Pending").length || 0;
+                const approved = c.invoices?.filter(i => i.status === "Approved").length || 0;
+                const rejected = c.invoices?.filter(i => i.status === "Rejected").length || 0;
+                const awaiting = c.invoices?.filter(i => i.status === "Awaiting").length || 0;
 
                 return (
                   <tr
@@ -89,32 +90,37 @@ export default function AdminInvoices() {
                     <td className="px-4 py-3">{total}</td>
 
                     {/* Gradient Badges */}
-                    <td className="px-4 py-3">
-                      <span className="px-3 py-1 rounded-full text-xs bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-medium">
+                    <td className="px-2 py-2">
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-medium">
                         {pending}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="px-3 py-1 rounded-full text-xs bg-gradient-to-r from-green-400 to-green-600 text-black font-medium">
+                    <td className="px-2 py-2">
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-green-400 to-green-600 text-black font-medium">
                         {approved}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="px-3 py-1 rounded-full text-xs bg-gradient-to-r from-red-400 to-red-600 text-white font-medium">
+                    <td className="px-2 py-2">
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-red-400 to-red-600 text-white font-medium">
                         {rejected}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="px-3 py-1 rounded-full text-xs bg-gradient-to-r from-purple-400 to-purple-600 text-white font-medium">
+                    <td className="px-2 py-2">
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-purple-400 to-purple-600 text-white font-medium">
                         {awaiting}
                       </span>
                     </td>
 
                     {/* Actions */}
-                    <td className="px-4 py-3">
-                      <button className="flex items-center space-x-1 bg-gradient-to-r from-red-500 to-red-700 px-3 py-1 rounded-md text-xs hover:scale-105 transition">
+                    <td className="px-2 py-2 flex gap-2">
+                      <button className="flex items-center space-x-1 bg-gradient-to-r from-red-500 to-red-700 px-2 py-0.5 rounded-md text-xs hover:scale-105 transition">
                         <TrashIcon className="h-4 w-4" /> <span>Delete</span>
                       </button>
+                      <Link
+                        to={`/admin/customer/${c._id}`} 
+                      className="flex items-center space-x-1 bg-gradient-to-r from-green-500 to-green-700 px-2 py-0.5 rounded-md text-xs hover:scale-105 transition">
+                        <MagnifyingGlassIcon className="h-4 w-4" /> <span>View</span>
+                      </Link>
                     </td>
                   </tr>
                 );
