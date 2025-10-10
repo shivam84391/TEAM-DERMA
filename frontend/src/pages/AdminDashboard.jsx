@@ -15,18 +15,41 @@ import {
   UserGroupIcon,
   DocumentChartBarIcon,
 } from "@heroicons/react/24/outline";
-import { Link } from "react-router-dom";
+const AttendanceIcon = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    className={`h-6 w-6 ${props.className || ""}`}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002"
+    />
+  </svg>
+);
+const approvalIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" 
+  className={`h-6 w-6 ${props.className || ""}`}
+  >
+  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+</svg>
+);
+
+
 
 const sidebarLinks = [
   { name: "Dashboard", icon: HomeIcon, path: "/admin/dashboard" },
   { name: "Invoices", icon: FolderIcon, path: "/admin/invoices" },
   { name: "Total Users", icon: UserGroupIcon, path: "/admin/users" },
   { name: "Reports", icon: DocumentChartBarIcon, path: "/admin/reports" },
-  { name: "Approve Set", icon: CheckCircleIcon, path: "/approve-set" },
-  { name: "Pending Users", icon: ClockIcon, path: "/pending-users" },
   { name: "Add User", icon: UserGroupIcon, path: "/add-user" },
   { name: "Settings", icon: Cog6ToothIcon, path: "/admin/settings" },
-  { name: "Attendance", icon: Cog6ToothIcon, path: "/admin/attend"  },
+  { name: "Attendance", icon:AttendanceIcon,path:"/admin/attend"},
+  { name: "User Approvals", icon:approvalIcon,path:"/admin/approvals"},
 ];
 
 export default function AdminDashboard() {
@@ -40,7 +63,7 @@ export default function AdminDashboard() {
     rejected: 0,
   });
 
-  // ✅ Disable browser back button
+  // Disable browser back button
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
     const handlePopState = () => {
@@ -50,13 +73,13 @@ export default function AdminDashboard() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  // ✅ Update clock every second
+  // Update clock every second
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // ✅ Fetch customers and their invoices
+  // Fetch customers and their invoices
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -78,7 +101,7 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  // ✅ Calculate stats dynamically
+  // Calculate stats dynamically
   useEffect(() => {
     if (customers.length === 0) return;
 
@@ -99,7 +122,7 @@ export default function AdminDashboard() {
     setStatsData({ total, approved, pending, rejected });
   }, [customers]);
 
-  // ✅ Flatten invoices from all customers and sort
+  // Flatten invoices from all customers and sort
   useEffect(() => {
     if (customers.length === 0) return;
 
@@ -120,7 +143,7 @@ export default function AdminDashboard() {
     setRecentInvoices(flattened.slice(0, 5));
   }, [customers]);
 
-  // ✅ Stats data
+  // Stats data
   const stats = [
     {
       name: "Total Invoices",
@@ -157,43 +180,44 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <aside className="relative z-10 w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col justify-between">
         <div>
-          <div className="p-6 text-center">
+          <div className="text-center mt-2">
             <div className="p-3 text-center">
               <img
                 src="/logos.png"
                 alt="ZENTRASense Logo"
-                className="max-h-32 w-auto object-contain scale-130"
+                className=" w-auto  h-10 object-contain scale-130"
               />
             </div>
           </div>
           <nav className="mt-4 space-y-2">
             {sidebarLinks.map((item) => (
-              <Link
-                to={item.path}
+              <a
+                href={item.path}
                 key={item.name}
                 className="flex items-center w-full px-5 py-3 rounded-lg hover:bg-white/10 transition text-left"
               >
                 <item.icon className="h-5 w-5 mr-3 text-purple-400" />
                 {item.name}
-              </Link>
+              </a>
             ))}
           </nav>
         </div>
 
-        {/* Logout Section */}
-        <div className="p-4 border-t border-white/10 text-sm">
-          <div className="mb-2 font-semibold">Admin User</div>
-          <Link
-            to="/"
-            className="flex items-center space-x-2 text-red-400 hover:text-red-500"
+        {/* Sidebar bottom */}
+        <div className="p-6">
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.clear(); // clear all storage
+              window.location.href = "/"; // redirect to home
+            }}
+            className="flex items-center justify-center space-x-2 w-full px-3 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-full transition duration-200 shadow-md"
           >
-            <ArrowRightOnRectangleIcon className="h-4 w-4" />
+            <ArrowRightOnRectangleIcon className="h-5 w-5" />
             <span>Logout</span>
-          </Link>
+          </button>
         </div>
-      </aside>
-
-      {/* Main Content */}
+        </aside>
       <main className="relative z-10 flex-1 overflow-y-auto p-6">
         {/* Top Bar */}
         <div className="flex justify-between items-center mb-8">

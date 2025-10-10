@@ -1,8 +1,9 @@
 /* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
-export default function Register() {
+export default function RegisterUser() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -11,25 +12,27 @@ export default function Register() {
     cityState: "",
     pincode: "",
     password: "",
-    role: "user",
-    isApproved:"false"
+    role: "user", // default user role
   });
   const [message, setMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { ...formData, isApproved: true };
     setMessage("");
+
     try {
+      // just send formData; do NOT set isApproved
       const res = await fetch("http://localhost:4000/api/users/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData),
       });
 
       const data = await res.json();
       if (res.ok) {
-        setMessage("✅ Registered Successfully!");
+        setMessage(
+          "✅ Registered Successfully! Wait for admin approval before logging in."
+        );
       } else {
         setMessage("❌ " + (data.message || "Something went wrong"));
       }
@@ -192,6 +195,14 @@ export default function Register() {
             REGISTER
           </button>
         </motion.div>
+
+        {/* Already registered link */}
+        <p className="mt-4 text-center text-gray-300">
+          Already registered?{" "}
+          <Link to="/login" className="text-indigo-400 font-semibold hover:underline">
+            Click here
+          </Link>
+        </p>
       </motion.div>
     </div>
   );

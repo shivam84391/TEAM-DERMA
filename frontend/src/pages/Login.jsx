@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext"; // ✅ import context
 
 export default function Login() {
@@ -180,12 +180,12 @@ export default function Login() {
                 className="text-gray-400"
               >
                 Don’t have an account?{" "}
-                <a
-                  href="#"
+                <Link
+                  to="/"
                   className="text-indigo-400 hover:text-indigo-300 font-medium"
                 >
                   Register
-                </a>
+                </Link>
               </motion.p>
               <motion.a
                 initial={{ opacity: 0 }}

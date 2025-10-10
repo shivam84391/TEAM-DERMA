@@ -8,9 +8,10 @@ export default function Admincal() {
   const [selectedSet, setSelectedSet] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch all invoice sets
+  // ✅ Fetch all invoice sets
   const fetchInvoiceSets = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -18,12 +19,7 @@ export default function Admincal() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-
-      // ✅ Sort by date (latest first)
-      const sorted = data.sort(
-        (a, b) => new Date(b.date) - new Date(a.date)
-      );
-
+      const sorted = data.sort((a, b) => new Date(b.date) - new Date(a.date));
       setSets(sorted);
     } catch (err) {
       console.error("Error fetching invoice sets:", err);
@@ -34,7 +30,7 @@ export default function Admincal() {
     fetchInvoiceSets();
   }, []);
 
-  // Fetch invoice details
+  // ✅ Fetch invoice details
   const fetchInvoiceDetails = async (id) => {
     try {
       setLoading(true);
@@ -44,6 +40,7 @@ export default function Admincal() {
       });
       const data = await res.json();
       setSelectedInvoice(data);
+      setIsEditing(false);
     } catch (err) {
       console.error("Error fetching invoice details:", err);
     } finally {
@@ -51,7 +48,7 @@ export default function Admincal() {
     }
   };
 
-  // Update set status
+  // ✅ Update set status (Approve / Hold / Reject)
   const updateSetStatus = async (setNumber, action) => {
     try {
       const token = localStorage.getItem("token");
@@ -71,14 +68,42 @@ export default function Admincal() {
     }
   };
 
-  // ✅ Search based on set number
+  // ✅ Save edited invoice
+  const saveInvoiceChanges = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `http://localhost:4000/api/admin/invoice/${selectedInvoice._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(selectedInvoice),
+        }
+      );
+
+      if (res.ok) {
+        alert("✅ Invoice updated successfully!");
+        setIsEditing(false);
+        fetchInvoiceSets();
+      } else {
+        alert("❌ Failed to update invoice");
+      }
+    } catch (err) {
+      console.error("Error saving invoice:", err);
+    }
+  };
+
+  // ✅ Search filter
   const filtered = sets.filter((s) =>
     s.setNumber?.toString().toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white p-6">
-      {/* Back to Dashboard Button */}
+      {/* Back button */}
       <button
         className="mb-4 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-semibold"
         onClick={() => navigate("/admin/dashboard")}
@@ -104,31 +129,28 @@ export default function Admincal() {
         </div>
       </div>
 
-      {/* === APPROVAL CRITERIA BOX === */}
+      {/* Approval Criteria */}
       <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-5 mb-6 text-sm leading-relaxed">
         <h2 className="font-semibold text-lg mb-2 text-purple-300">
           Approval Criteria
         </h2>
         <ul className="list-disc pl-5 space-y-1 text-gray-200">
           <li>
-            ✅ <strong>Approved Set:</strong> All invoices meet quality and
-            format standards (minimum 20 valid invoices) →{" "}
-            <strong>₹100 per approved set</strong>.
+            ✅ <strong>Approved Set:</strong> All invoices valid →{" "}
+            <strong>₹100 per set</strong>.
           </li>
           <li>
-            🟡 <strong>On Hold Set:</strong> 2 or 3 invalid invoices, fake/dummy
-            data, duplicate, or minor format issue →{" "}
-            <strong>₹2 per valid invoice</strong> in the set.
+            🟡 <strong>On Hold Set:</strong> Minor issues →{" "}
+            <strong>₹2 per valid invoice</strong>.
           </li>
           <li>
-            ❌ <strong>Rejected Set:</strong> 4 or more invalid invoices,
-            fake/dummy data, duplicate, or major format issue →{" "}
-            <strong>₹0 (No payment)</strong>.
+            ❌ <strong>Rejected Set:</strong> Major issues →{" "}
+            <strong>₹0</strong>.
           </li>
         </ul>
       </div>
 
-      {/* === TABLE === */}
+      {/* Invoice Table */}
       <div className="overflow-x-auto bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 shadow-lg">
         <table className="min-w-full text-sm">
           <thead>
@@ -152,8 +174,6 @@ export default function Admincal() {
                 <td className="px-4 py-3">{s.date}</td>
                 <td className="px-4 py-3">{s.status}</td>
                 <td className="px-4 py-3">{s.invoices.length}</td>
-
-                {/* Actions */}
                 <td className="px-4 py-3 flex flex-wrap gap-2">
                   <button
                     className="px-3 py-1 rounded-md text-xs bg-blue-500 hover:bg-blue-700"
@@ -228,6 +248,7 @@ export default function Admincal() {
                   <p className="text-center text-gray-500">Loading...</p>
                 ) : (
                   <>
+                    {/* === INVOICE DETAILS === */}
                     <div className="flex justify-between mb-6">
                       <div>
                         <h2 className="text-2xl font-bold">INVOICE</h2>
@@ -240,11 +261,42 @@ export default function Admincal() {
                       </div>
                       <div className="text-right">
                         <p>
-                          <b>Invoice No:</b> {selectedInvoice.invoiceNo}
+                          <b>Invoice No:</b>{" "}
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={selectedInvoice.invoiceNo}
+                              onChange={(e) =>
+                                setSelectedInvoice({
+                                  ...selectedInvoice,
+                                  invoiceNo: e.target.value,
+                                })
+                              }
+                              className="border px-2 py-1 rounded-md text-sm"
+                            />
+                          ) : (
+                            selectedInvoice.invoiceNo
+                          )}
                         </p>
                         <p>
                           <b>Date:</b>{" "}
-                          {new Date(selectedInvoice.date).toLocaleDateString()}
+                          {isEditing ? (
+                            <input
+                              type="date"
+                              value={selectedInvoice.date.split("T")[0]}
+                              onChange={(e) =>
+                                setSelectedInvoice({
+                                  ...selectedInvoice,
+                                  date: e.target.value,
+                                })
+                              }
+                              className="border px-2 py-1 rounded-md text-sm"
+                            />
+                          ) : (
+                            new Date(
+                              selectedInvoice.date
+                            ).toLocaleDateString()
+                          )}
                         </p>
                         <p>
                           <b>Status:</b> {selectedInvoice.status}
@@ -252,12 +304,27 @@ export default function Admincal() {
                       </div>
                     </div>
 
+                    {/* === CUSTOMER INFO === */}
                     <div className="flex justify-between mb-6 text-sm">
                       <div>
                         <p>
                           <b>Bill To:</b>
                         </p>
-                        <p>{selectedInvoice.customerName}</p>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={selectedInvoice.customerName}
+                            onChange={(e) =>
+                              setSelectedInvoice({
+                                ...selectedInvoice,
+                                customerName: e.target.value,
+                              })
+                            }
+                            className="border px-2 py-1 rounded-md"
+                          />
+                        ) : (
+                          <p>{selectedInvoice.customerName}</p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p>
@@ -266,6 +333,7 @@ export default function Admincal() {
                       </div>
                     </div>
 
+                    {/* === PRODUCTS === */}
                     <table className="min-w-full text-sm border border-gray-300 rounded-lg mb-6">
                       <thead>
                         <tr className="bg-gray-100">
@@ -280,31 +348,156 @@ export default function Admincal() {
                       <tbody>
                         {selectedInvoice.products.map((p, i) => (
                           <tr key={i} className="border-t">
-                            <td className="px-3 py-2">{p.name}</td>
-                            <td className="px-3 py-2">{p.serial}</td>
-                            <td className="px-3 py-2">₹{p.rate}</td>
-                            <td className="px-3 py-2">{p.qty}</td>
-                            <td className="px-3 py-2">₹{p.discount}</td>
+                            <td className="px-3 py-2">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={p.name}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...selectedInvoice.products,
+                                    ];
+                                    updated[i].name = e.target.value;
+                                    setSelectedInvoice({
+                                      ...selectedInvoice,
+                                      products: updated,
+                                    });
+                                  }}
+                                  className="border px-2 py-1 rounded-md w-full"
+                                />
+                              ) : (
+                                p.name
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={p.serial}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...selectedInvoice.products,
+                                    ];
+                                    updated[i].serial = e.target.value;
+                                    setSelectedInvoice({
+                                      ...selectedInvoice,
+                                      products: updated,
+                                    });
+                                  }}
+                                  className="border px-2 py-1 rounded-md w-full"
+                                />
+                              ) : (
+                                p.serial
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  value={p.rate}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...selectedInvoice.products,
+                                    ];
+                                    updated[i].rate = e.target.value;
+                                    setSelectedInvoice({
+                                      ...selectedInvoice,
+                                      products: updated,
+                                    });
+                                  }}
+                                  className="border px-2 py-1 rounded-md w-full"
+                                />
+                              ) : (
+                                `₹${p.rate}`
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  value={p.qty}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...selectedInvoice.products,
+                                    ];
+                                    updated[i].qty = e.target.value;
+                                    setSelectedInvoice({
+                                      ...selectedInvoice,
+                                      products: updated,
+                                    });
+                                  }}
+                                  className="border px-2 py-1 rounded-md w-full"
+                                />
+                              ) : (
+                                p.qty
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  value={p.discount}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...selectedInvoice.products,
+                                    ];
+                                    updated[i].discount = e.target.value;
+                                    setSelectedInvoice({
+                                      ...selectedInvoice,
+                                      products: updated,
+                                    });
+                                  }}
+                                  className="border px-2 py-1 rounded-md w-full"
+                                />
+                              ) : (
+                                `₹${p.discount}`
+                              )}
+                            </td>
                             <td className="px-3 py-2">₹{p.amount}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
 
+                    {/* === TOTALS === */}
                     <div className="text-right space-y-1">
                       <p>Subtotal: ₹{selectedInvoice.subtotal}</p>
                       <p>Discount: ₹{selectedInvoice.discount}</p>
-                      <p className="font-bold">
-                        Total: ₹{selectedInvoice.total}
-                      </p>
+                      <p className="font-bold">Total: ₹{selectedInvoice.total}</p>
                     </div>
 
-                    <button
-                      onClick={() => setSelectedInvoice(null)}
-                      className="mt-4 px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
-                    >
-                      Back to List
-                    </button>
+                    {/* === ACTION BUTTONS === */}
+                    <div className="mt-6 flex justify-end gap-3">
+                      {!isEditing ? (
+                        <button
+                          onClick={() => setIsEditing(true)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          Edit Invoice
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={saveInvoiceChanges}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          >
+                            Save Changes
+                          </button>
+                          <button
+                            onClick={() => setIsEditing(false)}
+                            className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => setSelectedInvoice(null)}
+                        className="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300"
+                      >
+                        Back to List
+                      </button>
+                    </div>
                   </>
                 )}
               </>

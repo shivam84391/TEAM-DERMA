@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Router } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard";
@@ -14,13 +14,16 @@ import UserDetails from "./pages/UserDetails.jsx";
 import UserReport from "./pages/UserReport.jsx";
 import Punch from "./pages/Punch.jsx";
 import AdminAttend from "./pages/AdminAttend.jsx";
+import RegisterUser from "./pages/RegisterUser.jsx";
+import AdminApproval from "./pages/AdminApproval.jsx";
 
 export default function App() {
   return (
     <>
       <Routes>
         {/* Public route */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<RegisterUser />} />
+        <Route path="/login" element={<Login />} />
 
         {/* Protected routes */}
         <Route
@@ -108,6 +111,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AdminAttend/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/approvals"
+          element={
+            <ProtectedRoute>
+              <AdminApproval/>
             </ProtectedRoute>
           }
         />

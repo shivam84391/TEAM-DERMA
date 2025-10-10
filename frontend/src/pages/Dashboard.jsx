@@ -29,7 +29,6 @@ const sidebarLinks = [
   { name: "Dashboard", icon: HomeIcon, path: "/dashboard" },
   { name: "Create Invoice", icon: PlusCircleIcon, path: "/invoice" },
   { name: "Invoices", icon: FolderIcon, path: "/invoice-history" },
-  { name: "Settings", icon: Cog6ToothIcon, path: "/admin/settings" },
   { name: "Punch Machine", icon: FingerPrintIcon, path: "/punch" },
 ];
 
@@ -199,8 +198,14 @@ export default function Dashboard() {
       {/* Sidebar */}
       <aside className="relative z-10 w-52 bg-white/10 backdrop-blur-xl border-r border-white/5 flex flex-col justify-between">
         <div>
-          <div className="p-4 text-center">
-            <img src="/logos.png" alt="ZENTRASense Logo" className="max-h-24 w-auto object-contain" />
+          <div className="text-center mt-2">
+            <div className="p-3 text-center">
+              <img
+                src="/logos.png"
+                alt="ZENTRASense Logo"
+                className=" w-auto  h-10 object-contain scale-130"
+              />
+            </div>
           </div>
           <nav className="mt-4 space-y-2">
             {sidebarLinks.map((item) => (

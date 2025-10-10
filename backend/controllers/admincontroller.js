@@ -32,6 +32,40 @@ export const getAllCustomers = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+export const getPendingUsers = async (req, res) => {
+  try {
+    const pendingUsers = await User.find({ isApproved: false }).select(
+      "-password"
+    ); // exclude password
+    res.status(200).json(pendingUsers);
+  } catch (err) {
+    console.error("Error fetching pending users:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// PATCH approve/reject user
+export const approveUser = async (req, res) => {
+  try {
+    const { id } = req.params; // user id
+    const { approve } = req.body; // true = approve, false = reject
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (approve) {
+      user.isApproved = true;
+      await user.save();
+      return res.status(200).json({ message: "User approved successfully" });
+    } else {
+      await User.findByIdAndDelete(id); // reject = delete user
+      return res.status(200).json({ message: "User rejected and deleted" });
+    }
+  } catch (err) {
+    console.error("Error approving/rejecting user:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 // =============================
 // GET invoices grouped by setNumber
@@ -84,6 +118,7 @@ export const getInvoiceById = async (req, res) => {
     const total = subtotal - discount;
 
     res.json({
+      _id: invoice._id,
       invoiceNo: invoice.invoiceNumber,
       customerName: invoice.customerName,
       createdBy: invoice.createdBy?.email,
@@ -175,6 +210,49 @@ export const getUserDetailsWithInvoices = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching user details:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+export const updateInvoiceById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = req.body; // frontend sends edited invoice details
+    console.log("Updating invoice:", id, updatedData);
+
+    // Find the existing invoice
+    const invoice = await Invoice.findById(id);
+    if (!invoice) {
+      return res.status(404).json({ message: "Invoice not found" });
+    }
+
+    // Update editable fields
+    invoice.invoiceNumber = updatedData.invoiceNo || invoice.invoiceNumber;
+    invoice.customerName = updatedData.customerName || invoice.customerName;
+    invoice.setNumber = updatedData.setNumber || invoice.setNumber;
+    invoice.status = updatedData.status || invoice.status;
+    invoice.date = updatedData.date ? new Date(updatedData.date) : invoice.date;
+
+    // Update product details if provided
+    if (Array.isArray(updatedData.products)) {
+      invoice.products = updatedData.products.map((p) => ({
+        productId: p.productId || "",
+        name: p.name,
+        serial: p.serial,
+        rate: Number(p.rate),
+        qty: Number(p.qty),
+        discount: Number(p.discount),
+        type: p.type || "product",
+      }));
+    }
+
+    await invoice.save();
+
+    res.status(200).json({
+      message: "Invoice updated successfully",
+      invoice,
+    });
+  } catch (error) {
+    console.error("Error updating invoice:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };
