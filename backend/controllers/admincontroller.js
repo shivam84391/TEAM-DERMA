@@ -1,5 +1,6 @@
 import Invoice from "../models/invoices_schema.js";
 import User from "../models/user_models.js";
+import Punch from "../models/punch_models.js";
 
 // =============================
 // GET all customers with their invoices
@@ -199,5 +200,88 @@ export const updateInvoiceStatus = async (req, res) => {
   } catch (error) {
     console.error("Error updating invoice status:", error);
     res.status(500).json({ message: "Server error", error });
+  }
+};
+export const getAllPunchRecords = async (req, res) => {
+  try {
+    const punches = await Punch.find()
+      .populate("userId", "fullName email")
+      .sort({ punchInTime: -1 });
+
+    res.status(200).json(punches);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching records", error: error.message });
+  }
+};
+
+// ✅ Approve or Reject Punch Record
+export const updatePunchStatus = async (req, res) => {
+  try {
+    const { punchId } = req.params;
+    const { approved } = req.body; // true or false
+
+    const punch = await Punch.findById(punchId);
+    if (!punch) return res.status(404).json({ message: "Punch record not found!" });
+
+    punch.adminApproved = approved;
+    await punch.save();
+
+    res.status(200).json({
+      message: approved ? "Punch record approved" : "Punch record rejected",
+      punch,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating punch record", error: error.message });
+  }
+};
+export const getPunchesToday = async (req, res) => {
+  try {
+    // Get today's start and end time
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Fetch all users
+    const users = await User.find();
+
+    // Fetch all punches for today
+    const punches = await Punch.find({
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+    }).populate("userId", "name email");
+
+    // Map punches by userId
+    const punchMap = {};
+    punches.forEach((p) => {
+      const totalTime =
+        p.punchInTime && p.punchOutTime
+          ? Math.floor((new Date(p.punchOutTime) - new Date(p.punchInTime)) / 1000)
+          : null;
+
+      punchMap[p.userId._id.toString()] = {
+        user: p.userId,
+        punchInTime: p.punchInTime,
+        punchOutTime: p.punchOutTime,
+        totalTime,
+      };
+    });
+
+    // Combine all users (even those without punch data)
+    const result = users.map((u) => {
+      const punch = punchMap[u._id.toString()];
+      return (
+        punch || {
+          user: { name: u.name, email: u.email },
+          punchInTime: null,
+          punchOutTime: null,
+          totalTime: null,
+        }
+      );
+    });
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Error fetching punches:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };

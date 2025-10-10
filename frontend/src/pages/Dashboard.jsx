@@ -6,16 +6,17 @@ import {
   ClockIcon,
   XCircleIcon,
   CurrencyRupeeIcon,
-  BellIcon,
-  MagnifyingGlassIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   PlusCircleIcon,
   FolderIcon,
   HomeIcon,
+  FingerPrintIcon,
 } from "@heroicons/react/24/outline";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext.jsx";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const initialStats = [
   { name: "Total Invoices", value: 0, icon: ClipboardDocumentListIcon, color: "text-purple-400" },
@@ -29,6 +30,7 @@ const sidebarLinks = [
   { name: "Create Invoice", icon: PlusCircleIcon, path: "/invoice" },
   { name: "Invoices", icon: FolderIcon, path: "/invoice-history" },
   { name: "Settings", icon: Cog6ToothIcon, path: "/admin/settings" },
+  { name: "Punch Machine", icon: FingerPrintIcon, path: "/punch" },
 ];
 
 export default function Dashboard() {
@@ -37,7 +39,17 @@ export default function Dashboard() {
   const [stats, setStats] = useState(initialStats);
   const [earnings, setEarnings] = useState(0);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
+  // Prevent back navigation after login
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Fetch bills and compute stats
   const fetchBills = async () => {
     setLoading(true);
     try {
@@ -53,7 +65,6 @@ export default function Dashboard() {
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
 
-      // Group invoices by setNumber
       const grouped = {};
       data.forEach((invoice) => {
         const setNum = invoice.setNumber ?? "unknown";
@@ -82,7 +93,6 @@ export default function Dashboard() {
       const setsArr = Object.values(grouped);
       setSets(setsArr);
 
-      // ✅ Stats calculation from setsArr
       const total = setsArr.reduce((acc, s) => acc + Number(s.total || 0), 0);
       const approvedCount = setsArr.reduce((acc, s) => acc + Number(s.approved || 0), 0);
       const pendingCount = setsArr.reduce((acc, s) => acc + Number(s.pending || 0), 0);
@@ -101,103 +111,132 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ Earnings calculation based on sets change
+  // Calculate earnings
   useEffect(() => {
     let calculatedEarnings = 0;
-
     sets.forEach((set) => {
       const totalInv = Number(set.total || 0);
       const invalidInv = Number(set.rejected || 0);
       const validInv = totalInv - invalidInv;
 
-      if (validInv >= 20 && invalidInv <= 1) {
-        calculatedEarnings += 100;
-      } else if (invalidInv === 2 || invalidInv === 3) {
-        calculatedEarnings += validInv * 2;
-      } else if (invalidInv >= 4) {
-        calculatedEarnings += 0;
-      }
+      if (validInv >= 3 && invalidInv <= 1) calculatedEarnings += 100;
+      else if (invalidInv === 2 || invalidInv === 3) calculatedEarnings += validInv * 2;
     });
-
     setEarnings(calculatedEarnings);
   }, [sets]);
 
+  // Fetch bills on mount
   useEffect(() => {
     fetchBills();
   }, []);
 
+  // Logout with punch-out confirmation
+  const handleLogoutClick = () => {
+    const punchInTime = localStorage.getItem("punchInTime"); // store this on punch-in
+    const now = new Date();
+    let hoursWorked = 0;
+
+    if (punchInTime) {
+      const diffMs = now - new Date(punchInTime);
+      hoursWorked = Math.floor(diffMs / (1000 * 60 * 60)); // convert to hours
+    }
+
+    toast.info(
+      <div>
+        <p>You have worked {hoursWorked} hour{hoursWorked !== 1 ? "s" : ""} today.</p>
+        {hoursWorked < 7 && <p className="text-red-400">You haven't completed 7 hours yet!</p>}
+        <p>Do you want to logout?</p>
+        <div className="mt-2 flex justify-end gap-2">
+          <button
+            onClick={() => {
+              toast.dismiss();
+              logoutUser();
+            }}
+            className="px-3 py-1 bg-green-600 text-white rounded"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss()}
+            className="px-3 py-1 bg-red-600 text-white rounded"
+          >
+            No
+          </button>
+        </div>
+      </div>,
+      { autoClose: false, closeButton: false }
+    );
+  };
+
+  const logoutUser = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      await fetch("http://localhost:4000/api/users/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      localStorage.removeItem("token");
+      localStorage.removeItem("punchInTime"); // clear punch info
+      navigate("/");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   return (
     <div className="relative flex h-screen text-gray-100 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] overflow-hidden">
+      <ToastContainer position="top-center" autoClose={false} closeOnClick={false} draggable={false} />
+
       {/* Background glows */}
       <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/30 rounded-full blur-[180px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-indigo-600/30 rounded-full blur-[180px]" />
 
       {/* Sidebar */}
-      <aside className="relative z-10 w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col justify-between">
+      <aside className="relative z-10 w-52 bg-white/10 backdrop-blur-xl border-r border-white/5 flex flex-col justify-between">
         <div>
-          <div className="p-6 text-center">
-            <div className="p-3 text-center">
-              <img
-                src="/logos.png"
-                alt="ZENTRASense Logo"
-                className="max-h-32 w-auto object-contain scale-130"
-              />
-            </div>
+          <div className="p-4 text-center">
+            <img src="/logos.png" alt="ZENTRASense Logo" className="max-h-24 w-auto object-contain" />
           </div>
           <nav className="mt-4 space-y-2">
             {sidebarLinks.map((item) => (
               <Link
                 to={item.path}
                 key={item.name}
-                className="flex items-center w-full px-5 py-3 rounded-lg hover:bg-white/10 transition text-left"
+                className="flex items-center w-full px-4 py-2 rounded-lg hover:bg-white/20 hover:backdrop-blur-sm transition text-left text-sm text-gray-200"
               >
-                <item.icon className="h-5 w-5 mr-3 text-purple-400" />
+                <item.icon className="h-5 w-5 mr-3 text-purple-300" />
                 {item.name}
               </Link>
             ))}
           </nav>
         </div>
 
-        <div className="p-4 border-t border-white/10 text-sm">
-          <div className="mb-2 font-semibold">{user.email}</div>
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center space-x-2 text-red-400 hover:text-red-500">
-              <ArrowRightOnRectangleIcon className="h-4 w-4" />
-              <span>Logout</span>
-            </Link>
-            <button
-              onClick={fetchBills}
-              className="ml-2 px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs"
-            >
-              Refresh
-            </button>
-          </div>
+        {/* Sidebar Bottom: Logout + Refresh */}
+        <div className="p-3 border-t border-white/10 text-sm">
+          <button
+            onClick={handleLogoutClick}
+            className="flex items-center justify-center space-x-2 w-full px-3 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-full transition duration-200 shadow-md"
+          >
+            <ArrowRightOnRectangleIcon className="h-5 w-5" />
+            <span>Logout</span>
+          </button>
+          <button
+            onClick={fetchBills}
+            className="mt-2 w-full px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-full transition duration-200 shadow-md"
+          >
+            Refresh
+          </button>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="relative z-10 flex-1 overflow-y-auto p-6">
-        {/* Top Bar */}
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 rounded-full bg-white/10 border border-white/20 placeholder-gray-400 text-gray-100 focus:ring-2 focus:ring-purple-400 outline-none"
-              />
-              <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-2 text-gray-400" />
-            </div>
-            <div className="relative">
-              <BellIcon className="h-6 w-6 text-gray-200 cursor-pointer" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                1
-              </span>
-            </div>
-          </div>
-        </div>
-
+        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
         <p className="text-gray-300 mb-8">
           Welcome back, <span className="font-semibold text-white">{user?.email ?? "User"}</span> 🚀
         </p>
@@ -270,9 +309,7 @@ export default function Dashboard() {
               <tbody>
                 {loading ? (
                   <tr className="text-gray-400 text-center">
-                    <td className="py-4 px-4" colSpan={7}>
-                      Loading...
-                    </td>
+                    <td className="py-4 px-4" colSpan={7}>Loading...</td>
                   </tr>
                 ) : sets.length > 0 ? (
                   sets.map((s, idx) => (
@@ -282,9 +319,7 @@ export default function Dashboard() {
                       <td className="py-3 px-4 text-green-400">{s.approved}</td>
                       <td className="py-3 px-4 text-yellow-400">{s.pending}</td>
                       <td className="py-3 px-4 text-red-400">{s.rejected}</td>
-                      <td className="py-3 px-4">
-                        {s.created ? new Date(s.created).toLocaleDateString() : "-"}
-                      </td>
+                      <td className="py-3 px-4">{s.created ? new Date(s.created).toLocaleDateString() : "-"}</td>
                       <td className="py-3 px-4">
                         <Link
                           to={`/invoice-set/${encodeURIComponent(s.setNumber)}`}
@@ -297,9 +332,7 @@ export default function Dashboard() {
                   ))
                 ) : (
                   <tr className="text-gray-400 text-center">
-                    <td className="py-4 px-4" colSpan={7}>
-                      No data available
-                    </td>
+                    <td className="py-4 px-4" colSpan={7}>No data available</td>
                   </tr>
                 )}
               </tbody>

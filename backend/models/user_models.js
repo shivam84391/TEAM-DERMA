@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    // isloggedin:{
+    //   type: Boolean,
+    //   default: false, 
+    // },
     email: {
       type: String,
       required: true,

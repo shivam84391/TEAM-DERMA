@@ -12,56 +12,44 @@ export default function UserDetails() {
   const [loading, setLoading] = useState(true);
 
   // Fetch user details + invoices
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`http://localhost:4000/api/admin/${id}/details`);
-        const data = await res.json();
-        setUser(data.user);
-        setInvoices(data.invoices);
-        setStats(data.stats);
-      } catch (error) {
-        console.error("Error fetching user details:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`http://localhost:4000/api/admin/${id}/details`);
+      const data = await res.json();
+      setUser(data.user);
+      setInvoices(data.invoices);
+      setStats(data.stats);
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchData();
+  useEffect(() => {
+    fetchUserData();
   }, [id]);
 
-  // Update invoice status (Approve / Reject)
-  const updateStatus = async (invoiceId, status) => {
+  // Update invoice status (Approve / Reject) and auto-refresh
+  const updateStatus = async (setNumber, action) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/admin/${invoiceId}/status`, {
+      const token = localStorage.getItem("token");
+      let url = `http://localhost:4000/api/admin/invoices/${setNumber}`;
+      if (action === "approve") url += "/approve";
+      if (action === "reject") url += "/reject";
+
+      const res = await fetch(url, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) throw new Error("Failed to update status");
 
-      // Update UI immediately
-      setInvoices((prev) =>
-        prev.map((inv) =>
-          inv._id === invoiceId ? { ...inv, status } : inv
-        )
-      );
-
-      // Refresh summary counts
-      setStats((prev) => {
-        const approved = invoices.filter((i) => i.status === "Approved").length;
-        const pending = invoices.filter((i) => i.status === "Pending").length;
-        const rejected = invoices.filter((i) => i.status === "Rejected").length;
-        return {
-          ...prev,
-          approvedCount: approved,
-          pendingCount: pending,
-          rejectedCount: rejected,
-        };
-      });
+      // Auto-refresh after update
+      await fetchUserData();
     } catch (err) {
-      console.error(err);
+      console.error("Error updating invoice status:", err);
     }
   };
 
@@ -203,13 +191,13 @@ export default function UserDetails() {
                     View
                   </button>
                   <button
-                    onClick={() => updateStatus(inv._id, "Approved")}
+                    onClick={() => updateStatus(inv.setNumber, "approve")}
                     className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 rounded-md"
                   >
                     Approve
                   </button>
                   <button
-                    onClick={() => updateStatus(inv._id, "Rejected")}
+                    onClick={() => updateStatus(inv.setNumber, "reject")}
                     className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 rounded-md"
                   >
                     Reject

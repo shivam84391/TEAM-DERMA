@@ -27,7 +27,7 @@ export default function Login() {
       });
 
       const data = await response.json();
-      console.log("Response data:", data);
+     
 
       if (!response.ok) {
         setError(data.message || "Invalid credentials");

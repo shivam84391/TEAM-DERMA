@@ -71,8 +71,9 @@ export default function Admincal() {
     }
   };
 
+  // ✅ Search based on set number
   const filtered = sets.filter((s) =>
-    s.user?.toLowerCase().includes(search.toLowerCase())
+    s.setNumber?.toString().toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -93,7 +94,7 @@ export default function Admincal() {
         <div className="relative">
           <input
             type="text"
-            placeholder="Search by user..."
+            placeholder="Search by set number..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 pr-4 py-2 rounded-lg bg-white/10 border border-white/20 

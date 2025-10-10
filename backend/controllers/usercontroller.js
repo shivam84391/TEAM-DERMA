@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from "../models/user_models.js";
 import Invoice from '../models/invoices_schema.js';
+import Punch from '../models/punch_models.js';
 // Adjust path as needed
 
 // Register Controller
@@ -47,18 +48,20 @@ export const login = async (req, res) => {
     if (!email || !password || !role) {
         return res.status(400).json({ message: 'Email, password, and role are required.' });
     }
-
     const user = await User.findOne({ email, role });
     if (!user) {
         return res.status(401).json({ message: 'Invalid credentials.' });
     }
-    
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
         console.log('User not found with email:', email, 'and role:', role);
         return res.status(401).json({ message: 'Invalid credentials.' });
     }
-
+    // if(user.isloggedin){
+    //     return res.status(400).json({ message: 'User already logged in from another device.' });
+    // }
+    // user.isloggedin = true;
+    // await user.save();
     const token = jwt.sign(
         { email: user.email, role: user.role, _id: user._id },
         process.env.JWT_SECRET,
@@ -72,10 +75,30 @@ export const login = async (req, res) => {
 
     res.json({ message: 'Login successful.', token, email: user.email, role: user.role });
 };
+export const logout = async (req, res) => {
+  try {
+    const userId = req.user?._id; 
 
-export const logout = (req, res) => {
-    res.clearCookie('token');
-    res.json({ message: 'Logged out successfully.' });
+    if (userId) {
+      const punch = await Punch.findOne({ userId, punchOutTime: null });
+
+      if (punch) {
+        punch.punchOutTime = new Date();
+
+        const totalTime = (punch.punchOutTime - punch.punchInTime) / (1000 * 60 * 60);
+        punch.status = totalTime < 7 ? "Forced Logout" : "Completed";
+
+        await punch.save();
+      }
+    }
+    res.clearCookie("token");
+    res.status(200).json({
+      message: "Logged out successfully. Punch out recorded (if active).",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ message: "Error during logout", error: error.message });
+  }
 };
 
 export const createInvoice = async (req, res) => {
@@ -149,4 +172,18 @@ export const getInvoiceBySetNumber = async (req, res) => {
         return res.status(500).json({ message: "Server error" });
     }
 };
+export const getMyPunch = async (req, res) => {
+  try {
+    const punch = await Punch.findOne({
+      userId: req.user._id,
+      status: "Active",
+    }).sort({ createdAt: -1 }); // get the latest active punch
 
+    if (!punch) return res.json({ punch: null });
+
+    res.json({ punch });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};

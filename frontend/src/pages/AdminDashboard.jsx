@@ -14,7 +14,6 @@ import {
   HomeIcon,
   UserGroupIcon,
   DocumentChartBarIcon,
-  ChatBubbleOvalLeftEllipsisIcon,
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 
@@ -27,6 +26,7 @@ const sidebarLinks = [
   { name: "Pending Users", icon: ClockIcon, path: "/pending-users" },
   { name: "Add User", icon: UserGroupIcon, path: "/add-user" },
   { name: "Settings", icon: Cog6ToothIcon, path: "/admin/settings" },
+  { name: "Attendance", icon: Cog6ToothIcon, path: "/admin/attend"  },
 ];
 
 export default function AdminDashboard() {
@@ -40,13 +40,23 @@ export default function AdminDashboard() {
     rejected: 0,
   });
 
-  // Update clock every second
+  // ✅ Disable browser back button
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // ✅ Update clock every second
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch customers and their invoices
+  // ✅ Fetch customers and their invoices
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -68,7 +78,7 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  // Calculate stats dynamically
+  // ✅ Calculate stats dynamically
   useEffect(() => {
     if (customers.length === 0) return;
 
@@ -89,7 +99,7 @@ export default function AdminDashboard() {
     setStatsData({ total, approved, pending, rejected });
   }, [customers]);
 
-  // Flatten invoices from all customers and sort
+  // ✅ Flatten invoices from all customers and sort
   useEffect(() => {
     if (customers.length === 0) return;
 
@@ -110,7 +120,7 @@ export default function AdminDashboard() {
     setRecentInvoices(flattened.slice(0, 5));
   }, [customers]);
 
-  // ✅ Dynamic stats (style unchanged)
+  // ✅ Stats data
   const stats = [
     {
       name: "Total Invoices",
@@ -147,7 +157,7 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <aside className="relative z-10 w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 flex flex-col justify-between">
         <div>
-           <div className="p-6 text-center">
+          <div className="p-6 text-center">
             <div className="p-3 text-center">
               <img
                 src="/logos.png"
@@ -212,11 +222,10 @@ export default function AdminDashboard() {
         </div>
 
         <p className="text-gray-300 mb-8">
-          Welcome back, <span className="font-semibold text-white">Admin</span>{" "}
-          🚀
+          Welcome back, <span className="font-semibold text-white">Admin</span> 🚀
         </p>
 
-        {/* Stats (dynamic values, same look) */}
+        {/* Stats */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat, idx) => (
             <motion.div
@@ -262,9 +271,7 @@ export default function AdminDashboard() {
 
         {/* Recent Invoices */}
         <div className="bg-white/5 backdrop-blur-xl rounded-xl p-5 border border-white/10">
-          <h3 className="text-lg font-semibold mb-4 text-white">
-            Recent Invoices
-          </h3>
+          <h3 className="text-lg font-semibold mb-4 text-white">Recent Invoices</h3>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead>
@@ -278,10 +285,7 @@ export default function AdminDashboard() {
               </thead>
               <tbody>
                 {recentInvoices.map((inv, idx) => (
-                  <tr
-                    key={idx}
-                    className="border-t border-white/10 text-gray-300"
-                  >
+                  <tr key={idx} className="border-t border-white/10 text-gray-300">
                     <td className="py-3 px-4">{inv.id}</td>
                     <td className="py-3 px-4">{inv.user}</td>
                     <td className="py-3 px-4">
@@ -305,10 +309,7 @@ export default function AdminDashboard() {
                 ))}
                 {recentInvoices.length === 0 && (
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="text-gray-400 text-center py-4"
-                    >
+                    <td colSpan="5" className="text-gray-400 text-center py-4">
                       No invoices found.
                     </td>
                   </tr>
