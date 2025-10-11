@@ -1,5 +1,5 @@
 import express from "express";
-import { register, login, logout, createInvoice, bills, getInvoiceBySetNumber, getMyPunch } from "../controllers/usercontroller.js";
+import { register, login, logout, createInvoice, bills, getInvoiceBySetNumber, getMyPunch, freezePunch, resumePunch } from "../controllers/usercontroller.js";
 import {authMiddleware} from "../middleware/authmiddleware.js";
 import { endBreak, punchIn, punchOut, startBreak } from "../controllers/punchcontoller.js";
 // import { create } from "@mui/material/styles/createTransitions.js";
@@ -19,6 +19,8 @@ router.post("/punch-out",authMiddleware,punchOut);
 router.post("/break/start", authMiddleware, startBreak);
 router.post("/break/end",authMiddleware, endBreak);
 router.get("/my-punch", authMiddleware,getMyPunch);
+router.post("/freeze-punch", authMiddleware,freezePunch);
+router.post("/resume-punch/:userId", authMiddleware,resumePunch);
 
 
 export default router;

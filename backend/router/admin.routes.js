@@ -9,6 +9,7 @@ import {
   getPendingUsers,
   getPunchesToday,
   getUserDetailsWithInvoices,
+  getUserPunchesLast30Days,
   updateInvoiceById,
   updateInvoiceStatus,
   updatePunchStatus,
@@ -26,6 +27,7 @@ router.put("/invoices/:setNumber/:action", authMiddleware, updateSetStatus); // 
 router.put("/invoices/:id/status", authMiddleware, updateInvoiceStatus);
 router.get("/pending-users",authMiddleware, getPendingUsers);
 router.patch("/approve-user/:id",authMiddleware, approveUser);
+router.get("/user-punches/:userId",authMiddleware, getUserPunchesLast30Days);
 
 // ✅ User & Punch Routes
 router.get("/:id/details", authMiddleware, getUserDetailsWithInvoices);

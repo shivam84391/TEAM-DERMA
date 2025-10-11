@@ -11,7 +11,6 @@ export default function Admincal() {
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Fetch all invoice sets
   const fetchInvoiceSets = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -30,7 +29,6 @@ export default function Admincal() {
     fetchInvoiceSets();
   }, []);
 
-  // ✅ Fetch invoice details
   const fetchInvoiceDetails = async (id) => {
     try {
       setLoading(true);
@@ -48,7 +46,6 @@ export default function Admincal() {
     }
   };
 
-  // ✅ Update set status (Approve / Hold / Reject)
   const updateSetStatus = async (setNumber, action) => {
     try {
       const token = localStorage.getItem("token");
@@ -68,7 +65,6 @@ export default function Admincal() {
     }
   };
 
-  // ✅ Save edited invoice
   const saveInvoiceChanges = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -96,14 +92,12 @@ export default function Admincal() {
     }
   };
 
-  // ✅ Search filter
   const filtered = sets.filter((s) =>
     s.setNumber?.toString().toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white p-6">
-      {/* Back button */}
       <button
         className="mb-4 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-semibold"
         onClick={() => navigate("/admin/dashboard")}
@@ -111,7 +105,6 @@ export default function Admincal() {
         ← Back to Dashboard
       </button>
 
-      {/* Heading + Search */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold flex items-center space-x-2">
           <span>📑</span> <span>Invoice Sets</span>
@@ -122,37 +115,31 @@ export default function Admincal() {
             placeholder="Search by set number..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 pr-4 py-2 rounded-lg bg-white/10 border border-white/20 
-                       placeholder-gray-400 text-white focus:ring-2 focus:ring-purple-400 outline-none"
+            className="pl-10 pr-4 py-2 rounded-lg bg-white/10 border border-white/20 placeholder-gray-400 text-white focus:ring-2 focus:ring-purple-400 outline-none"
           />
           <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-2.5 text-gray-400" />
         </div>
       </div>
 
-      {/* Approval Criteria */}
       <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-5 mb-6 text-sm leading-relaxed">
         <h2 className="font-semibold text-lg mb-2 text-purple-300">
           Approval Criteria
         </h2>
         <ul className="list-disc pl-5 space-y-1 text-gray-200">
           <li>
-            ✅ <strong>Approved Set:</strong> All invoices valid →{" "}
-            <strong>₹100 per set</strong>.
+            ✅ <strong>Approved Set:</strong> All invoices valid → <strong>₹100 per set</strong>.
           </li>
           <li>
-            🟡 <strong>On Hold Set:</strong> Minor issues →{" "}
-            <strong>₹2 per valid invoice</strong>.
+            🟡 <strong>On Hold Set:</strong> Minor issues → <strong>₹2 per valid invoice</strong>.
           </li>
           <li>
-            ❌ <strong>Rejected Set:</strong> Major issues →{" "}
-            <strong>₹0</strong>.
+            ❌ <strong>Rejected Set:</strong> Major issues → <strong>₹0</strong>.
           </li>
         </ul>
       </div>
 
-      {/* Invoice Table */}
       <div className="overflow-x-auto bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 shadow-lg">
-        <table className="min-w-full text-sm">
+        <table className="min-w-full border border-gray-300 border-collapse text-sm">
           <thead>
             <tr className="bg-white/10 text-gray-300 text-left">
               <th className="px-4 py-3">Set Number</th>
@@ -165,13 +152,10 @@ export default function Admincal() {
           </thead>
           <tbody>
             {filtered.map((s, idx) => (
-              <tr
-                key={idx}
-                className="border-t border-white/10 text-gray-200 hover:bg-white/10 transition"
-              >
+              <tr key={idx} className="border-t border-white/10 text-gray-200 hover:bg-white/10 transition">
                 <td className="px-4 py-3">{s.setNumber}</td>
                 <td className="px-4 py-3">{s.user}</td>
-                <td className="px-4 py-3">{s.date}</td>
+                <td className="px-4 py-3">{new Date(s.date).toLocaleDateString()}</td>
                 <td className="px-4 py-3">{s.status}</td>
                 <td className="px-4 py-3">{s.invoices.length}</td>
                 <td className="px-4 py-3 flex flex-wrap gap-2">
@@ -184,7 +168,6 @@ export default function Admincal() {
                   >
                     View
                   </button>
-
                   <button
                     className="px-3 py-1 rounded-md text-xs bg-green-600 hover:bg-green-800"
                     onClick={() => updateSetStatus(s.setNumber, "approve")}
@@ -210,23 +193,17 @@ export default function Admincal() {
         </table>
       </div>
 
-      {/* === MODAL FOR SET DETAILS === */}
       {selectedSet && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg w-3/4 max-h-[90vh] overflow-y-auto p-6 text-black relative">
             <button
-              onClick={() => {
-                setSelectedSet(null);
-                setSelectedInvoice(null);
-              }}
+              onClick={() => { setSelectedSet(null); setSelectedInvoice(null); }}
               className="absolute top-4 right-4 text-gray-600 hover:text-black"
             >
               <XMarkIcon className="h-6 w-6" />
             </button>
 
-            <h2 className="text-xl font-bold mb-4">
-              Invoices in Set {selectedSet.setNumber}
-            </h2>
+            <h2 className="text-xl font-bold mb-4">Invoices in Set {selectedSet.setNumber}</h2>
 
             {!selectedInvoice && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -252,122 +229,82 @@ export default function Admincal() {
                     <div className="flex justify-between mb-6">
                       <div>
                         <h2 className="text-2xl font-bold">INVOICE</h2>
-                        <p>
-                          <b>From:</b> {selectedInvoice.createdBy}
-                        </p>
-                        <p>
-                          <b>Set:</b> {selectedInvoice.setNumber}
-                        </p>
+                        <p><b>From:</b> {selectedInvoice.createdBy}</p>
+                        <p><b>Set:</b> {selectedInvoice.setNumber}</p>
                       </div>
                       <div className="text-right">
-                        <p>
-                          <b>Invoice No:</b>{" "}
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={selectedInvoice.invoiceNo}
-                              onChange={(e) =>
-                                setSelectedInvoice({
-                                  ...selectedInvoice,
-                                  invoiceNo: e.target.value,
-                                })
-                              }
-                              className="border px-2 py-1 rounded-md text-sm"
-                            />
-                          ) : (
-                            selectedInvoice.invoiceNo
-                          )}
-                        </p>
-                        <p>
-                          <b>Date:</b>{" "}
-                          {isEditing ? (
-                            <input
-                              type="date"
-                              value={selectedInvoice.date.split("T")[0]}
-                              onChange={(e) =>
-                                setSelectedInvoice({
-                                  ...selectedInvoice,
-                                  date: e.target.value,
-                                })
-                              }
-                              className="border px-2 py-1 rounded-md text-sm"
-                            />
-                          ) : (
-                            new Date(
-                              selectedInvoice.date
-                            ).toLocaleDateString()
-                          )}
-                        </p>
-                        <p>
-                          <b>Status:</b> {selectedInvoice.status}
-                        </p>
+                        <p><b>Invoice No:</b> {isEditing ? (
+                          <input
+                            type="text"
+                            value={selectedInvoice.invoiceNo}
+                            onChange={(e) =>
+                              setSelectedInvoice({ ...selectedInvoice, invoiceNo: e.target.value })
+                            }
+                            className="border px-2 py-1 rounded-md text-sm"
+                          />
+                        ) : selectedInvoice.invoiceNo}</p>
+                        <p><b>Date:</b> {isEditing ? (
+                          <input
+                            type="date"
+                            value={selectedInvoice.date.split("T")[0]}
+                            onChange={(e) =>
+                              setSelectedInvoice({ ...selectedInvoice, date: e.target.value })
+                            }
+                            className="border px-2 py-1 rounded-md text-sm"
+                          />
+                        ) : new Date(selectedInvoice.date).toLocaleDateString()}</p>
+                        <p><b>Status:</b> {selectedInvoice.status}</p>
                       </div>
                     </div>
 
                     {/* === CUSTOMER INFO === */}
                     <div className="flex justify-between mb-6 text-sm">
                       <div>
-                        <p>
-                          <b>Bill To:</b>
-                        </p>
+                        <p><b>Bill To:</b></p>
                         {isEditing ? (
                           <input
                             type="text"
                             value={selectedInvoice.customerName}
                             onChange={(e) =>
-                              setSelectedInvoice({
-                                ...selectedInvoice,
-                                customerName: e.target.value,
-                              })
+                              setSelectedInvoice({ ...selectedInvoice, customerName: e.target.value })
                             }
                             className="border px-2 py-1 rounded-md"
                           />
-                        ) : (
-                          <p>{selectedInvoice.customerName}</p>
-                        )}
+                        ) : <p>{selectedInvoice.customerName}</p>}
                       </div>
                       <div className="text-right">
-                        <p>
-                          <b>Email:</b> {selectedInvoice.createdBy}
-                        </p>
+                        <p><b>Email:</b> {selectedInvoice.createdBy}</p>
                       </div>
                     </div>
 
-                    {/* === PRODUCTS === */}
-                    <table className="min-w-full text-sm border border-gray-300 rounded-lg mb-6">
+                    {/* === PRODUCTS TABLE === */}
+                    <table className="min-w-full border border-gray-300 border-collapse text-sm mb-6">
                       <thead>
                         <tr className="bg-gray-100">
-                          <th className="px-3 py-2">Product</th>
-                          <th className="px-3 py-2">Serial</th>
-                          <th className="px-3 py-2">Rate</th>
-                          <th className="px-3 py-2">Qty</th>
-                          <th className="px-3 py-2">Discount</th>
-                          <th className="px-3 py-2">Amount</th>
+                          <th className="px-3 py-2 text-left">Product</th>
+                          <th className="px-3 py-2 text-left">Serial</th>
+                          <th className="px-3 py-2 text-right">Rate</th>
+                          <th className="px-3 py-2 text-right">Qty</th>
+                          <th className="px-3 py-2 text-right">Discount</th>
+                          <th className="px-3 py-2 text-right">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         {selectedInvoice.products.map((p, i) => (
-                          <tr key={i} className="border-t">
+                          <tr key={i} className="border-t border-gray-300">
                             <td className="px-3 py-2">
                               {isEditing ? (
                                 <input
                                   type="text"
                                   value={p.name}
                                   onChange={(e) => {
-                                    const updated = [
-                                      ...selectedInvoice.products,
-                                    ];
+                                    const updated = [...selectedInvoice.products];
                                     updated[i].name = e.target.value;
-                                    setSelectedInvoice({
-                                      ...selectedInvoice,
-                                      products: updated,
-                                    });
+                                    setSelectedInvoice({ ...selectedInvoice, products: updated });
                                   }}
                                   className="border px-2 py-1 rounded-md w-full"
                                 />
-                              ) : (
-                                p.name
-                              )}
+                              ) : p.name}
                             </td>
                             <td className="px-3 py-2">
                               {isEditing ? (
@@ -375,98 +312,68 @@ export default function Admincal() {
                                   type="text"
                                   value={p.serial}
                                   onChange={(e) => {
-                                    const updated = [
-                                      ...selectedInvoice.products,
-                                    ];
+                                    const updated = [...selectedInvoice.products];
                                     updated[i].serial = e.target.value;
-                                    setSelectedInvoice({
-                                      ...selectedInvoice,
-                                      products: updated,
-                                    });
+                                    setSelectedInvoice({ ...selectedInvoice, products: updated });
                                   }}
                                   className="border px-2 py-1 rounded-md w-full"
                                 />
-                              ) : (
-                                p.serial
-                              )}
+                              ) : p.serial}
                             </td>
-                            <td className="px-3 py-2">
+                            <td className="px-3 py-2 text-right">
                               {isEditing ? (
                                 <input
                                   type="number"
                                   value={p.rate}
                                   onChange={(e) => {
-                                    const updated = [
-                                      ...selectedInvoice.products,
-                                    ];
+                                    const updated = [...selectedInvoice.products];
                                     updated[i].rate = e.target.value;
-                                    setSelectedInvoice({
-                                      ...selectedInvoice,
-                                      products: updated,
-                                    });
+                                    setSelectedInvoice({ ...selectedInvoice, products: updated });
                                   }}
-                                  className="border px-2 py-1 rounded-md w-full"
+                                  className="border px-2 py-1 rounded-md w-full text-right"
                                 />
-                              ) : (
-                                `₹${p.rate}`
-                              )}
+                              ) : `₹${p.rate}`}
                             </td>
-                            <td className="px-3 py-2">
+                            <td className="px-3 py-2 text-right">
                               {isEditing ? (
                                 <input
                                   type="number"
                                   value={p.qty}
                                   onChange={(e) => {
-                                    const updated = [
-                                      ...selectedInvoice.products,
-                                    ];
+                                    const updated = [...selectedInvoice.products];
                                     updated[i].qty = e.target.value;
-                                    setSelectedInvoice({
-                                      ...selectedInvoice,
-                                      products: updated,
-                                    });
+                                    setSelectedInvoice({ ...selectedInvoice, products: updated });
                                   }}
-                                  className="border px-2 py-1 rounded-md w-full"
+                                  className="border px-2 py-1 rounded-md w-full text-right"
                                 />
-                              ) : (
-                                p.qty
-                              )}
+                              ) : p.qty}
                             </td>
-                            <td className="px-3 py-2">
+                            <td className="px-3 py-2 text-right">
                               {isEditing ? (
                                 <input
                                   type="number"
                                   value={p.discount}
                                   onChange={(e) => {
-                                    const updated = [
-                                      ...selectedInvoice.products,
-                                    ];
+                                    const updated = [...selectedInvoice.products];
                                     updated[i].discount = e.target.value;
-                                    setSelectedInvoice({
-                                      ...selectedInvoice,
-                                      products: updated,
-                                    });
+                                    setSelectedInvoice({ ...selectedInvoice, products: updated });
                                   }}
-                                  className="border px-2 py-1 rounded-md w-full"
+                                  className="border px-2 py-1 rounded-md w-full text-right"
                                 />
-                              ) : (
-                                `₹${p.discount}`
-                              )}
+                              ) : `₹${p.discount}`}
                             </td>
-                            <td className="px-3 py-2">₹{p.amount}</td>
+                            <td className="px-3 py-2 text-right">₹{p.amount}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
 
-                    {/* === TOTALS === */}
                     <div className="text-right space-y-1">
                       <p>Subtotal: ₹{selectedInvoice.subtotal}</p>
                       <p>Discount: ₹{selectedInvoice.discount}</p>
                       <p className="font-bold">Total: ₹{selectedInvoice.total}</p>
                     </div>
 
-                    {/* === ACTION BUTTONS === */}
                     <div className="mt-6 flex justify-end gap-3">
                       {!isEditing ? (
                         <button

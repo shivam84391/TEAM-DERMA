@@ -132,7 +132,7 @@ export default function AdminDashboard() {
         flattened.push({
           id: inv._id,
           user: customer.name || customer.email,
-          date: inv.date ? new Date(inv.date) : null,
+          date: inv.createdAt ? new Date(inv.createdAt) : null,
           status: inv.status || "Pending",
           setNumber: inv.setNumber || "-",
         });

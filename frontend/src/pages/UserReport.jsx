@@ -1,6 +1,6 @@
 // UserReports.jsx
 import React, { useEffect, useState } from "react";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 
 /**
  * Utility: convert array of objects to CSV and trigger browser download
@@ -71,9 +71,7 @@ export default function UserReport() {
           "Content-Type": "application/json",
         },
       });
-      if (!res.ok) {
-        throw new Error(`Fetch error ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Fetch error ${res.status}`);
       const json = await res.json();
       const normalized = (Array.isArray(json) ? json : []).map((u) => ({
         id: u._id ?? u.id ?? "",
@@ -125,7 +123,7 @@ export default function UserReport() {
     0
   );
 
-  // 🧾 DOWNLOAD PER USER — with product-level details
+  // 🧾 DOWNLOAD PER USER
   const handleDownloadUser = (user) => {
     const rows = [];
 
@@ -149,7 +147,8 @@ export default function UserReport() {
             Product_Qty: p.qty,
             Product_Rate: p.rate,
             Product_Discount: p.discount,
-            Product_Amount: (p.qty || 0) * (p.rate || 0) - (p.discount || 0),
+            Product_Amount:
+              (p.qty || 0) * (p.rate || 0) - (p.discount || 0),
           });
         });
       } else {
@@ -176,10 +175,10 @@ export default function UserReport() {
     });
 
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    downloadCSV(rows, `user-${user.id}-invoices-products-${ts}.csv`);
+    downloadCSV(rows, `user-${user.id}-report-${ts}.csv`);
   };
 
-  // 🧾 DOWNLOAD ALL USERS — includes products for everyone
+  // 🧾 DOWNLOAD ALL USERS
   const handleDownloadAll = () => {
     const rows = [];
 
@@ -204,7 +203,8 @@ export default function UserReport() {
               Product_Qty: p.qty,
               Product_Rate: p.rate,
               Product_Discount: p.discount,
-              Product_Amount: (p.qty || 0) * (p.rate || 0) - (p.discount || 0),
+              Product_Amount:
+                (p.qty || 0) * (p.rate || 0) - (p.discount || 0),
             });
           });
         } else {
@@ -232,7 +232,7 @@ export default function UserReport() {
     });
 
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    downloadCSV(rows, `all-users-invoices-products-${ts}.csv`);
+    downloadCSV(rows, `all-users-report-${ts}.csv`);
   };
 
   return (
@@ -241,15 +241,15 @@ export default function UserReport() {
         {/* Header */}
         <div className="mb-6 p-4 bg-white/10 rounded-xl border border-white/20 backdrop-blur-md">
           <h1 className="text-xl font-bold flex items-center gap-2">
-            <span>📊</span> <span>User Reports - Sets and Invoices</span>
+            <span>📊</span> <span>User Reports - Sets & Invoices</span>
           </h1>
           <p className="text-sm text-gray-300 mt-1">
-            Comprehensive overview of user activities, invoices, and products
+            Comprehensive overview of users, invoices, and products.
           </p>
         </div>
 
         {/* Summary cards & Download all */}
-        <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
           <div className="flex gap-4 flex-wrap">
             <div className="bg-white/5 p-4 rounded-lg border border-white/10 w-40 text-center">
               <div className="text-xs text-gray-300">TOTAL USERS</div>
@@ -265,15 +265,13 @@ export default function UserReport() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleDownloadAll}
-              className="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-md flex items-center gap-2 text-sm"
-            >
-              <MagnifyingGlassIcon className="h-4 w-4" />
-              Download All Reports
-            </button>
-          </div>
+          <button
+            onClick={handleDownloadAll}
+            className="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-md flex items-center gap-2 text-sm"
+          >
+            <ArrowDownTrayIcon className="h-4 w-4" />
+            Download All Reports
+          </button>
         </div>
 
         {/* Search */}
@@ -294,18 +292,19 @@ export default function UserReport() {
           <table className="min-w-full text-sm">
             <thead className="bg-white/10 text-gray-300 text-left">
               <tr>
-                <th className="px-4 py-3">ID</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Email / Contact</th>
-                <th className="px-4 py-3 text-center">Invoices</th>
-                <th className="px-4 py-3 text-center">Products</th>
-                <th className="px-4 py-3 text-center">Action</th>
+                <th className="px-4 py-3">USER ID</th>
+                <th className="px-4 py-3">NAME</th>
+                <th className="px-4 py-3">CONTACT</th>
+                <th className="px-4 py-3 text-center">INVOICE NUMBER</th>
+                <th className="px-4 py-3 text-center">SET NUMBER</th>
+                <th className="px-4 py-3 text-center">PRODUCTS</th>
+                <th className="px-4 py-3 text-center">ACTION</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan="6" className="text-center py-8 text-gray-400">
+                  <td colSpan="7" className="text-center py-8 text-gray-400">
                     Loading...
                   </td>
                 </tr>
@@ -313,7 +312,7 @@ export default function UserReport() {
 
               {!loading && error && (
                 <tr>
-                  <td colSpan="6" className="text-center py-8 text-red-400">
+                  <td colSpan="7" className="text-center py-8 text-red-400">
                     Error: {error}
                   </td>
                 </tr>
@@ -321,7 +320,7 @@ export default function UserReport() {
 
               {!loading && !error && filtered.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="text-center py-8 text-gray-400">
+                  <td colSpan="7" className="text-center py-8 text-gray-400">
                     No users found
                   </td>
                 </tr>
@@ -330,43 +329,65 @@ export default function UserReport() {
               {!loading &&
                 !error &&
                 filtered.map((u, idx) => {
-                  const productCount = (u.invoices || []).reduce(
-                    (sum, inv) => sum + (inv.products?.length || 0),
-                    0
-                  );
-                  return (
-                    <tr
-                      key={u.id || idx}
-                      className="border-t border-white/10 text-gray-200"
-                    >
-                      <td className="px-4 py-3">{u.id}</td>
-                      <td className="px-4 py-3">{u.name}</td>
-                      <td className="px-4 py-3">{u.contact}</td>
-                      <td className="px-4 py-3 text-center">
-                        {u.invoices?.length || 0}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {productCount}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleDownloadUser(u)}
-                          className="bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded-md text-xs flex items-center gap-2"
-                        >
-                          <MagnifyingGlassIcon className="h-4 w-4" />
-                          Download
-                        </button>
-                      </td>
-                    </tr>
-                  );
+                  if (!u.invoices || u.invoices.length === 0) {
+                    return (
+                      <tr
+                        key={u.id || idx}
+                        className="border-t border-white/10 text-gray-200"
+                      >
+                        <td className="px-4 py-3">{u.id}</td>
+                        <td className="px-4 py-3">{u.name}</td>
+                        <td className="px-4 py-3">{u.contact}</td>
+                        <td className="px-4 py-3 text-center text-gray-400">N/A</td>
+                        <td className="px-4 py-3 text-center text-gray-400">N/A</td>
+                        <td className="px-4 py-3 text-center">0</td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleDownloadUser(u)}
+                            className="bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded-md text-xs flex items-center gap-2"
+                          >
+                            <ArrowDownTrayIcon className="h-4 w-4" />
+                            Download
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return u.invoices.map((inv, i) => {
+                    const productCount = inv.products?.length || 0;
+                    return (
+                      <tr
+                        key={`${u.id}-${i}`}
+                        className="border-t border-white/10 text-gray-200"
+                      >
+                        <td className="px-4 py-3">{i === 0 ? u.id : ""}</td>
+                        <td className="px-4 py-3">{i === 0 ? u.name : ""}</td>
+                        <td className="px-4 py-3">{i === 0 ? u.contact : ""}</td>
+                        <td className="px-4 py-3 text-center">{inv.invoiceNumber || "N/A"}</td>
+                        <td className="px-4 py-3 text-center">{inv.setNumber || "N/A"}</td>
+                        <td className="px-4 py-3 text-center">{productCount}</td>
+                        <td className="px-4 py-3 text-center">
+                          {i === 0 && (
+                            <button
+                              onClick={() => handleDownloadUser(u)}
+                              className="bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded-md text-xs flex items-center gap-2"
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4" />
+                              Download
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  });
                 })}
             </tbody>
           </table>
         </div>
 
-        <div className="mt-6 text-sm text-gray-400">
-          Tip: Click “Download All Reports” to get a CSV including all invoices
-          and products.
+        <div className="mt-6 text-sm text-gray-400 text-center">
+          Tip: Click “Download All Reports” to get a CSV of all users, invoices, and products.
         </div>
       </div>
     </div>

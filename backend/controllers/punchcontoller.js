@@ -5,16 +5,38 @@ import User from "../models/user_models.js";
 // USER CONTROLLERS
 // -------------------------
 
-// ✅ Punch In
+// ✅ Punch In (Once per calendar day)
 export const punchIn = async (req, res) => {
   try {
-    const userId = req.user._id; // Assuming JWT middleware adds user info
-    const existingPunch = await Punch.findOne({ userId, punchOutTime: null });
+    const userId = req.user._id;
 
+    // Check for active punch
+    const existingPunch = await Punch.findOne({ userId, punchOutTime: null });
     if (existingPunch) {
       return res.status(400).json({ message: "You are already punched in!" });
     }
 
+    // Find last punch (latest punchInTime)
+    const lastPunch = await Punch.findOne({ userId }).sort({ punchInTime: -1 });
+
+    if (lastPunch) {
+      const lastPunchDate = new Date(lastPunch.punchInTime);
+      const today = new Date();
+
+      // Check if both dates are same (same calendar day)
+      const isSameDay =
+        lastPunchDate.getDate() === today.getDate() &&
+        lastPunchDate.getMonth() === today.getMonth() &&
+        lastPunchDate.getFullYear() === today.getFullYear();
+
+      if (isSameDay) {
+        return res.status(400).json({
+          message: "You have already punched in today. Try again tomorrow.",
+        });
+      }
+    }
+
+    // Create new punch
     const newPunch = await Punch.create({
       userId,
       punchInTime: new Date(),

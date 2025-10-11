@@ -11,17 +11,29 @@ export default function UserDetails() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user details + invoices
+  // ✅ Fetch user details + invoices (includes Bearer token)
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:4000/api/admin/${id}/details`);
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`http://localhost:4000/api/admin/${id}/details`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ Fixed: pass token
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch user details: ${res.statusText}`);
+      }
+
       const data = await res.json();
       setUser(data.user);
-      setInvoices(data.invoices);
+      setInvoices(data.invoices || []);
       setStats(data.stats);
     } catch (error) {
-      console.error("Error fetching user details:", error);
+      console.error("❌ Error fetching user details:", error);
     } finally {
       setLoading(false);
     }
@@ -31,7 +43,7 @@ export default function UserDetails() {
     fetchUserData();
   }, [id]);
 
-  // Update invoice status (Approve / Reject) and auto-refresh
+  // ✅ Update invoice status (Approve / Reject) and auto-refresh
   const updateStatus = async (setNumber, action) => {
     try {
       const token = localStorage.getItem("token");
@@ -41,15 +53,17 @@ export default function UserDetails() {
 
       const res = await fetch(url, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ Ensure token here too
+        },
       });
 
-      if (!res.ok) throw new Error("Failed to update status");
+      if (!res.ok) throw new Error("Failed to update invoice status");
 
-      // Auto-refresh after update
-      await fetchUserData();
+      await fetchUserData(); // Refresh data after update
     } catch (err) {
-      console.error("Error updating invoice status:", err);
+      console.error("❌ Error updating invoice status:", err);
     }
   };
 
@@ -91,19 +105,19 @@ export default function UserDetails() {
           </div>
           <div>
             <p className="text-gray-300">Phone</p>
-            <p>{user.phone}</p>
+            <p>{user.phone || "-"}</p>
           </div>
           <div className="md:col-span-2 lg:col-span-1">
             <p className="text-gray-300">Address</p>
-            <p>{user.address}</p>
+            <p>{user.address || "-"}</p>
           </div>
           <div>
             <p className="text-gray-300">City/State</p>
-            <p>{user.cityState}</p>
+            <p>{user.cityState || "-"}</p>
           </div>
           <div>
             <p className="text-gray-300">Pincode</p>
-            <p>{user.pincode}</p>
+            <p>{user.pincode || "-"}</p>
           </div>
           <div>
             <p className="text-gray-300">Member Since</p>
@@ -115,26 +129,26 @@ export default function UserDetails() {
       {/* === STATS === */}
       {stats && (
         <div className="grid md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-4 text-center">
+          <div className="bg-white/10 border border-white/20 rounded-xl p-4 text-center">
             <p className="text-gray-300 text-sm">Total Invoices</p>
             <p className="text-2xl font-bold">{stats.totalInvoices}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-4 text-center">
+          <div className="bg-white/10 border border-white/20 rounded-xl p-4 text-center">
             <p className="text-gray-300 text-sm">Approved</p>
             <p className="text-2xl font-bold text-green-400">{stats.approvedCount}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-4 text-center">
+          <div className="bg-white/10 border border-white/20 rounded-xl p-4 text-center">
             <p className="text-gray-300 text-sm">Pending</p>
             <p className="text-2xl font-bold text-yellow-400">{stats.pendingCount}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-4 text-center">
+          <div className="bg-white/10 border border-white/20 rounded-xl p-4 text-center">
             <p className="text-gray-300 text-sm">Rejected</p>
             <p className="text-2xl font-bold text-red-400">{stats.rejectedCount}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-4 text-center">
+          <div className="bg-white/10 border border-white/20 rounded-xl p-4 text-center">
             <p className="text-gray-300 text-sm">Total Amount</p>
             <p className="text-2xl font-bold text-blue-400">
-              ₹{stats.totalAmount.toFixed(2)}
+              ₹{stats.totalAmount?.toFixed(2) || 0}
             </p>
           </div>
         </div>
@@ -154,57 +168,67 @@ export default function UserDetails() {
             </tr>
           </thead>
           <tbody>
-            {invoices.map((inv, idx) => (
-              <tr
-                key={idx}
-                className="border-t border-white/10 hover:bg-white/10 transition"
-              >
-                <td className="px-4 py-3">{inv.invoiceNumber || inv._id}</td>
-                <td className="px-4 py-3">
-                  {new Date(inv.createdAt).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3">{inv.products?.length || 0}</td>
-                <td className="px-4 py-3">
-                  ₹
-                  {inv.products?.reduce(
-                    (sum, p) => sum + (p.rate * p.qty - p.discount),
-                    0
-                  ).toFixed(2)}
-                </td>
-                <td className="px-4 py-3">
-                  {inv.status === "Approved" ? (
-                    <span className="px-2 py-1 text-green-400 bg-green-400/10 rounded-md">
-                      Approved
-                    </span>
-                  ) : inv.status === "Rejected" ? (
-                    <span className="px-2 py-1 text-red-400 bg-red-400/10 rounded-md">
-                      Rejected
-                    </span>
-                  ) : (
-                    <span className="px-2 py-1 text-yellow-400 bg-yellow-400/10 rounded-md">
-                      Pending
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 flex flex-wrap gap-2">
-                  <button className="px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 rounded-md">
-                    View
-                  </button>
-                  <button
-                    onClick={() => updateStatus(inv.setNumber, "approve")}
-                    className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 rounded-md"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => updateStatus(inv.setNumber, "reject")}
-                    className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 rounded-md"
-                  >
-                    Reject
-                  </button>
+            {invoices.length > 0 ? (
+              invoices.map((inv, idx) => (
+                <tr
+                  key={idx}
+                  className="border-t border-white/10 hover:bg-white/10 transition"
+                >
+                  <td className="px-4 py-3">{inv.invoiceNumber || inv._id}</td>
+                  <td className="px-4 py-3">
+                    {new Date(inv.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3">{inv.products?.length || 0}</td>
+                  <td className="px-4 py-3">
+                    ₹
+                    {inv.products
+                      ?.reduce(
+                        (sum, p) => sum + (p.rate * p.qty - (p.discount || 0)),
+                        0
+                      )
+                      .toFixed(2)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {inv.status === "Approved" ? (
+                      <span className="px-2 py-1 text-green-400 bg-green-400/10 rounded-md">
+                        Approved
+                      </span>
+                    ) : inv.status === "Rejected" ? (
+                      <span className="px-2 py-1 text-red-400 bg-red-400/10 rounded-md">
+                        Rejected
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 text-yellow-400 bg-yellow-400/10 rounded-md">
+                        Pending
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 flex flex-wrap gap-2">
+                    <button className="px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 rounded-md">
+                      View
+                    </button>
+                    <button
+                      onClick={() => updateStatus(inv.setNumber, "approve")}
+                      className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 rounded-md"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => updateStatus(inv.setNumber, "reject")}
+                      className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 rounded-md"
+                    >
+                      Reject
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="text-center py-6 text-gray-400">
+                  No invoices found.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

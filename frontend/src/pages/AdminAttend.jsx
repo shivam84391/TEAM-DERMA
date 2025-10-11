@@ -13,15 +13,15 @@ export default function AdminPunches() {
     day: "numeric",
   });
 
+  // Fetch today's punches
   const fetchPunches = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
       const res = await fetch("http://localhost:4000/api/admin/punches-today", {
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!res.ok) throw new Error("Failed to fetch data");
+      if (!res.ok) throw new Error("Failed to fetch punches");
       const data = await res.json();
       setRecords(data);
     } catch (err) {
@@ -33,7 +33,7 @@ export default function AdminPunches() {
 
   useEffect(() => {
     fetchPunches();
-    const interval = setInterval(fetchPunches, 30000);
+    const interval = setInterval(fetchPunches, 30000); // auto-refresh every 30s
     return () => clearInterval(interval);
   }, []);
 
@@ -51,26 +51,41 @@ export default function AdminPunches() {
       u.user?.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // ✅ Download CSV for a single user
+  // Download CSV for last 30 days for a specific user
   const downloadUserCSV = async (userId, userName) => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`http://localhost:4000/api/admin/user-punches/${userId}`, {
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!res.ok) throw new Error("Failed to fetch user punches");
+
       const data = await res.json();
 
       const headers = ["Date", "Punch In", "Punch Out", "Total Time"];
-      const rows = data.map((rec) => [
-        new Date(rec.punchInTime).toLocaleDateString(),
-        rec.punchInTime ? new Date(rec.punchInTime).toLocaleTimeString() : "-",
-        rec.punchOutTime ? new Date(rec.punchOutTime).toLocaleTimeString() : "-",
-        formatDuration(rec.totalTime),
-      ]);
 
-      const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].map((e) => e.join(",")).join("\n");
+      // Excel-friendly date/time format: YYYY-MM-DD and HH:MM:SS
+      const rows = data.map((rec) => {
+        const punchInDate = rec.punchInTime ? new Date(rec.punchInTime) : null;
+        const punchOutDate = rec.punchOutTime ? new Date(rec.punchOutTime) : null;
+
+        const dateStr = punchInDate
+          ? `${punchInDate.getFullYear()}-${String(punchInDate.getMonth() + 1).padStart(2, "0")}-${String(punchInDate.getDate()).padStart(2, "0")}`
+          : "";
+        const punchInStr = punchInDate
+          ? `${String(punchInDate.getHours()).padStart(2, "0")}:${String(punchInDate.getMinutes()).padStart(2, "0")}:${String(punchInDate.getSeconds()).padStart(2, "0")}`
+          : "";
+        const punchOutStr = punchOutDate
+          ? `${String(punchOutDate.getHours()).padStart(2, "0")}:${String(punchOutDate.getMinutes()).padStart(2, "0")}:${String(punchOutDate.getSeconds()).padStart(2, "0")}`
+          : "";
+
+        return [dateStr, punchInStr, punchOutStr, rec.totalTime ? formatDuration(rec.totalTime) : ""];
+      });
+
+      const csvContent =
+        "data:text/csv;charset=utf-8," +
+        [headers, ...rows].map((e) => e.join(",")).join("\n");
+
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
@@ -94,7 +109,6 @@ export default function AdminPunches() {
           </h1>
           <p className="text-gray-400 mt-1">📅 {formattedDate}</p>
         </div>
-
         <input
           type="text"
           placeholder="Search users..."
@@ -134,15 +148,19 @@ export default function AdminPunches() {
                     >
                       <td className="px-4 py-3">{user?.name || "-"}</td>
                       <td className="px-4 py-3">{user?.email || "-"}</td>
-                      <td className="px-4 py-3">{punchInTime ? new Date(punchInTime).toLocaleTimeString() : "-"}</td>
-                      <td className="px-4 py-3">{punchOutTime ? new Date(punchOutTime).toLocaleTimeString() : "-"}</td>
+                      <td className="px-4 py-3">
+                        {punchInTime ? new Date(punchInTime).toLocaleTimeString() : "-"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {punchOutTime ? new Date(punchOutTime).toLocaleTimeString() : "-"}
+                      </td>
                       <td className="px-4 py-3">{formatDuration(totalTime)}</td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => downloadUserCSV(user._id, user.name)}
                           className="px-2 py-1 bg-green-600 hover:bg-green-700 rounded text-white text-xs"
                         >
-                          📥 Download Attendence
+                          📥 Download Attendance
                         </button>
                       </td>
                     </tr>

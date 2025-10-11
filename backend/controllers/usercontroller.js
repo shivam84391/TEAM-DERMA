@@ -193,3 +193,37 @@ export const getMyPunch = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+export const freezePunch = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const punch = await Punch.findOne({ userId, punchOutTime: null });
+
+    if (!punch) return res.status(400).json({ message: "No active punch to freeze!" });
+
+    punch.frozen = true;
+    punch.status = "Frozen";
+    await punch.save();
+
+    res.status(200).json({ message: "Punch frozen. Contact admin to resume.", punch });
+  } catch (error) {
+    res.status(500).json({ message: "Error freezing punch", error: error.message });
+  }
+};
+// POST /api/admin/resume-punch/:userId
+export const resumePunch = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const punch = await Punch.findOne({ userId, frozen: true });
+
+    if (!punch) return res.status(400).json({ message: "No frozen punch found!" });
+
+    punch.frozen = false;
+    punch.status = "Active";
+    await punch.save();
+
+    res.status(200).json({ message: "Punch resumed by admin", punch });
+  } catch (error) {
+    res.status(500).json({ message: "Error resuming punch", error: error.message });
+  }
+};

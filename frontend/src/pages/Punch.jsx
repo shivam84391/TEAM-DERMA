@@ -1,34 +1,52 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function UserPunch() {
   const token = localStorage.getItem("token");
   const [punch, setPunch] = useState(null);
-  const [elapsed, setElapsed] = useState(0);
-  const [isOnBreak, setIsOnBreak] = useState(false);
-  const intervalRef = useRef(null);
+  const [canPunch, setCanPunch] = useState(true);
+  const [lastPunchTime, setLastPunchTime] = useState(null);
+  const [nextPunchTime, setNextPunchTime] = useState(null);
 
-  // Fetch active punch for current user
+  // Fetch today's or last punch
   const fetchPunch = async () => {
     try {
       const res = await fetch("http://localhost:4000/api/users/my-punch", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+
       if (data.punch) {
         setPunch(data.punch);
-        setIsOnBreak(!!data.punch.breakStartTime && !data.punch.breakEndTime);
-        const startTime = new Date(data.punch.punchInTime).getTime();
-        const endTime = data.punch.punchOutTime
-          ? new Date(data.punch.punchOutTime).getTime()
-          : Date.now();
-        setElapsed(Math.floor((endTime - startTime) / 1000));
+
+        const last = new Date(data.punch.punchInTime);
+        setLastPunchTime(last.toLocaleTimeString());
+
+        const now = new Date();
+        const isSameDay =
+          last.getDate() === now.getDate() &&
+          last.getMonth() === now.getMonth() &&
+          last.getFullYear() === now.getFullYear();
+
+        if (isSameDay) {
+          setCanPunch(false);
+
+          // next available = midnight of next day
+          const next = new Date(last);
+          next.setDate(next.getDate() + 1);
+          next.setHours(0, 0, 0, 0);
+          setNextPunchTime(next.toLocaleString());
+        } else {
+          setCanPunch(true);
+        }
       } else {
         setPunch(null);
-        setElapsed(0);
-        setIsOnBreak(false);
+        setCanPunch(true);
       }
     } catch (err) {
       console.error(err);
+      toast.error("❌ Failed to fetch punch details.");
     }
   };
 
@@ -36,32 +54,33 @@ export default function UserPunch() {
     fetchPunch();
   }, []);
 
-  // Live timer only for current user’s active punch
-  useEffect(() => {
-    clearInterval(intervalRef.current);
-    if (punch && !punch.punchOutTime && !isOnBreak) {
-      intervalRef.current = setInterval(() => {
-        const startTime = new Date(punch.punchInTime).getTime();
-        setElapsed(Math.floor((Date.now() - startTime) / 1000));
-      }, 1000);
-    }
-    return () => clearInterval(intervalRef.current);
-  }, [punch, isOnBreak]);
-
   const handlePunchIn = async () => {
+    if (!canPunch) {
+      toast.warning("⚠️ You can only punch in once per day!", {
+        position: "bottom-right",
+      });
+      return;
+    }
     try {
       const res = await fetch("http://localhost:4000/api/users/punch-in", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+
       if (res.ok) {
         setPunch(data.punch);
-        setIsOnBreak(false);
-        setElapsed(0);
-      } else alert(data.message);
+        setCanPunch(false);
+        setLastPunchTime(new Date(data.punch.punchInTime).toLocaleTimeString());
+        toast.success("✅ Punch In successful!");
+      } else {
+        toast.warning(data.message || "⚠️ Something went wrong while punching in!", {
+          position: "bottom-right",
+        });
+      }
     } catch (err) {
       console.error(err);
+      toast.error("❌ Failed to punch in. Please try again later.");
     }
   };
 
@@ -72,80 +91,69 @@ export default function UserPunch() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+
       if (res.ok) {
         setPunch(data.punch);
-        const startTime = new Date(data.punch.punchInTime).getTime();
-        const endTime = new Date(data.punch.punchOutTime).getTime();
-        setElapsed(Math.floor((endTime - startTime) / 1000));
-        setIsOnBreak(false);
-      } else alert(data.message);
+        toast.info("👋 You punched out successfully!");
+      } else {
+        toast.warning(data.message || "⚠️ Unable to punch out!", {
+          position: "bottom-right",
+        });
+      }
     } catch (err) {
       console.error(err);
+      toast.error("❌ Failed to punch out. Please try again later.");
     }
-  };
-
-  const toggleBreak = async () => {
-    if (!punch) return;
-    try {
-      const url = isOnBreak
-        ? "http://localhost:4000/api/users/end-break"
-        : "http://localhost:4000/api/users/start-break";
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok) setIsOnBreak(!isOnBreak);
-      else alert(data.message);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const formatTime = (secs) => {
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor((secs % 3600) / 60);
-    const s = secs % 60;
-    return `${h.toString().padStart(2, "0")}h ${m
-      .toString()
-      .padStart(2, "0")}m ${s.toString().padStart(2, "0")}s`;
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#141e30] to-[#243b55] text-white p-6">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-6">
       <h1 className="text-3xl font-bold mb-6">🕒 Punch Machine</h1>
 
       {!punch || punch.punchOutTime ? (
         <button
           onClick={handlePunchIn}
-          className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg text-lg font-semibold"
+          disabled={!canPunch}
+          className={`px-6 py-2 rounded-lg text-lg font-semibold transition-all duration-200 ${
+            canPunch
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-gray-600 cursor-not-allowed"
+          }`}
         >
           Punch In
         </button>
       ) : (
-        <div className="bg-white/10 p-6 rounded-2xl shadow-lg text-center space-y-4">
-          <div>
-            <p className="text-lg font-semibold">Elapsed Time:</p>
-            <p className="text-2xl">{formatTime(elapsed)}</p>
-          </div>
-          <div className="flex justify-center gap-3">
-            <button
-              onClick={toggleBreak}
-              className={`px-5 py-2 rounded-lg font-semibold ${
-                isOnBreak ? "bg-yellow-500" : "bg-blue-600 hover:bg-blue-700"
-              }`}
-            >
-              {isOnBreak ? "End Break" : "Start Break"}
-            </button>
-            <button
-              onClick={handlePunchOut}
-              className="px-5 py-2 rounded-lg font-semibold bg-red-600 hover:bg-red-700"
-            >
-              Punch Out
-            </button>
-          </div>
+        <div className="bg-gray-800 p-6 rounded-2xl shadow-lg text-center space-y-4">
+          <p>
+            ✅ Punched In at:{" "}
+            <span className="text-green-400 font-semibold">
+              {new Date(punch.punchInTime).toLocaleTimeString()}
+            </span>
+          </p>
+          <button
+            onClick={handlePunchOut}
+            className="px-5 py-2 rounded-lg font-semibold bg-red-600 hover:bg-red-700 transition-all duration-200"
+          >
+            Punch Out
+          </button>
         </div>
       )}
+
+      {!canPunch && punch && punch.punchOutTime && (
+        <div className="mt-6 text-center space-y-2">
+          <p className="text-yellow-400">
+            🕓 You last punched in at{" "}
+            <span className="font-semibold text-white">{lastPunchTime}</span>.
+          </p>
+          <p className="text-gray-300 text-sm">
+            You can punch in again after midnight:{" "}
+            <span className="text-blue-400 font-medium">{nextPunchTime}</span>
+          </p>
+        </div>
+      )}
+
+      {/* Toast container for all notifications */}
+      <ToastContainer position="top-right" autoClose={3000} theme="dark" />
     </div>
   );
 }

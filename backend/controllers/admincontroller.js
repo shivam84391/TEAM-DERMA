@@ -346,20 +346,54 @@ export const getPunchesToday = async (req, res) => {
 
     // Combine all users (even those without punch data)
     const result = users.map((u) => {
-      const punch = punchMap[u._id.toString()];
-      return (
-        punch || {
-          user: { name: u.name, email: u.email },
-          punchInTime: null,
-          punchOutTime: null,
-          totalTime: null,
-        }
-      );
-    });
+  const punch = punchMap[u._id.toString()];
+  return (
+    punch || {
+      user: { _id: u._id, name: u.name, email: u.email }, // add _id here
+      punchInTime: null,
+      punchOutTime: null,
+      totalTime: null,
+    }
+  );
+});
+
 
     res.status(200).json(result);
   } catch (err) {
     console.error("Error fetching punches:", err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+export const getUserPunchesLast30Days = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Calculate date 30 days ago
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Fetch punches of this user in last 30 days
+    const punches = await Punch.find({
+      userId,
+      createdAt: { $gte: thirtyDaysAgo },
+    })
+      .sort({ createdAt: -1 }) // latest first
+      .lean();
+
+    // Optional: Calculate totalTime (if not stored in DB)
+    const withDuration = punches.map((p) => {
+      let totalTime = null;
+      if (p.punchInTime && p.punchOutTime) {
+        totalTime = Math.floor(
+          (new Date(p.punchOutTime) - new Date(p.punchInTime)) / 1000
+        );
+      }
+      return { ...p, totalTime };
+    });
+
+    res.json(withDuration);
+  } catch (err) {
+    console.error("Error fetching punches:", err);
+    res.status(500).json({ message: "Server error while fetching user punches" });
   }
 };
