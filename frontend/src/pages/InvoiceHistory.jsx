@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+const API_URL = import.meta.env.VITE_API_URL;
 import {
   MagnifyingGlassIcon,
   PlusCircleIcon,
@@ -21,7 +22,7 @@ export default function InvoiceHistory() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:4000/api/users/bills", {
+        const res = await fetch(`${API_URL}/api/users/bills`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -49,7 +50,7 @@ export default function InvoiceHistory() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:4000/api/users/search-bills/${search}`,
+        `${API_URL}/api/users/search-bills/${search}`,
         {
           headers: {
             "Content-Type": "application/json",

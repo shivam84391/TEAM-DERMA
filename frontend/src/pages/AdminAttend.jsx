@@ -5,6 +5,8 @@ export default function AdminPunches() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const API_URL = import.meta.env.VITE_API_URL; // ✅ Vite env variable
+
   const today = new Date();
   const formattedDate = today.toLocaleDateString(undefined, {
     weekday: "long",
@@ -18,7 +20,7 @@ export default function AdminPunches() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:4000/api/admin/punches-today", {
+      const res = await fetch(`${API_URL}/api/admin/punches-today`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch punches");
@@ -35,7 +37,7 @@ export default function AdminPunches() {
     fetchPunches();
     const interval = setInterval(fetchPunches, 30000); // auto-refresh every 30s
     return () => clearInterval(interval);
-  }, []);
+  }, [API_URL]);
 
   const formatDuration = (seconds) => {
     if (!seconds || seconds <= 0) return "-";
@@ -55,7 +57,7 @@ export default function AdminPunches() {
   const downloadUserCSV = async (userId, userName) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:4000/api/admin/user-punches/${userId}`, {
+      const res = await fetch(`${API_URL}/api/admin/user-punches/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch user punches");
@@ -64,7 +66,6 @@ export default function AdminPunches() {
 
       const headers = ["Date", "Punch In", "Punch Out", "Total Time"];
 
-      // Excel-friendly date/time format: YYYY-MM-DD and HH:MM:SS
       const rows = data.map((rec) => {
         const punchInDate = rec.punchInTime ? new Date(rec.punchInTime) : null;
         const punchOutDate = rec.punchOutTime ? new Date(rec.punchOutTime) : null;
@@ -82,9 +83,7 @@ export default function AdminPunches() {
         return [dateStr, punchInStr, punchOutStr, rec.totalTime ? formatDuration(rec.totalTime) : ""];
       });
 
-      const csvContent =
-        "data:text/csv;charset=utf-8," +
-        [headers, ...rows].map((e) => e.join(",")).join("\n");
+      const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].map((e) => e.join(",")).join("\n");
 
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
@@ -148,12 +147,8 @@ export default function AdminPunches() {
                     >
                       <td className="px-4 py-3">{user?.name || "-"}</td>
                       <td className="px-4 py-3">{user?.email || "-"}</td>
-                      <td className="px-4 py-3">
-                        {punchInTime ? new Date(punchInTime).toLocaleTimeString() : "-"}
-                      </td>
-                      <td className="px-4 py-3">
-                        {punchOutTime ? new Date(punchOutTime).toLocaleTimeString() : "-"}
-                      </td>
+                      <td className="px-4 py-3">{punchInTime ? new Date(punchInTime).toLocaleTimeString() : "-"}</td>
+                      <td className="px-4 py-3">{punchOutTime ? new Date(punchOutTime).toLocaleTimeString() : "-"}</td>
                       <td className="px-4 py-3">{formatDuration(totalTime)}</td>
                       <td className="px-4 py-3">
                         <button

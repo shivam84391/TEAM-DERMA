@@ -1,7 +1,7 @@
 // UserReports.jsx
 import React, { useEffect, useState } from "react";
 import { MagnifyingGlassIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
-
+const API_URL = import.meta.env.VITE_API_URL;
 /**
  * Utility: convert array of objects to CSV and trigger browser download
  */
@@ -50,7 +50,7 @@ function downloadCSV(rows = [], filename = "report.csv") {
 }
 
 export default function UserReport() {
-  const API_URL = "http://localhost:4000/api/admin/users"; // adjust if needed
+  const API_URL = `${API_URL}/api/admin/users`; // adjust if needed
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 

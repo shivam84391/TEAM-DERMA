@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-
+const API_URL = import.meta.env.VITE_API_URL;
 export default function RegisterUser() {
   const [formData, setFormData] = useState({
     name: "",
@@ -22,7 +22,7 @@ export default function RegisterUser() {
 
     try {
       // just send formData; do NOT set isApproved
-      const res = await fetch("http://localhost:4000/api/users/register", {
+      const res = await fetch(`${API_URL}/api/users/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

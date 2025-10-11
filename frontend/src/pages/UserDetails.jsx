@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
 import { useNavigate, useParams } from "react-router-dom";
-
+const API_URL = import.meta.env.VITE_API_URL;
 export default function UserDetails() {
   const navigate = useNavigate();
   const { id } = useParams(); // userId from route params
@@ -17,7 +17,7 @@ export default function UserDetails() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const res = await fetch(`http://localhost:4000/api/admin/${id}/details`, {
+      const res = await fetch(`${API_URL}/api/admin/${id}/details`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`, // ✅ Fixed: pass token
@@ -47,7 +47,7 @@ export default function UserDetails() {
   const updateStatus = async (setNumber, action) => {
     try {
       const token = localStorage.getItem("token");
-      let url = `http://localhost:4000/api/admin/invoices/${setNumber}`;
+      let url = `${API_URL}/api/admin/invoices/${setNumber}`;
       if (action === "approve") url += "/approve";
       if (action === "reject") url += "/reject";
 

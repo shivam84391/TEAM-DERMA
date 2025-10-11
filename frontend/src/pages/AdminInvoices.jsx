@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { MagnifyingGlassIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
-
+const API_URL = import.meta.env.VITE_API_URL;
 export default function AdminInvoices() {
   const [search, setSearch] = useState("");
   const [customers, setCustomers] = useState([]);
@@ -10,7 +10,7 @@ export default function AdminInvoices() {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:4000/api/admin/users", {
+        const res = await fetch(`${API_URL}/api/admin/users`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

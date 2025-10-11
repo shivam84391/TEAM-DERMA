@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-
+const API_URL = import.meta.env.VITE_API_URL;
 export default function Admincal() {
   const [search, setSearch] = useState("");
   const [sets, setSets] = useState([]);
@@ -14,7 +14,7 @@ export default function Admincal() {
   const fetchInvoiceSets = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:4000/api/admin/invoices", {
+      const res = await fetch(`${API_URL}/api/admin/invoices`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -33,7 +33,7 @@ export default function Admincal() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:4000/api/admin/invoice/${id}`, {
+      const res = await fetch(`${API_URL}/api/admin/invoice/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -49,7 +49,7 @@ export default function Admincal() {
   const updateSetStatus = async (setNumber, action) => {
     try {
       const token = localStorage.getItem("token");
-      let url = `http://localhost:4000/api/admin/invoices/${setNumber}`;
+      let url = `${API_URL}/api/admin/invoices/${setNumber}`;
       if (action === "approve") url += "/approve";
       if (action === "reject") url += "/reject";
       if (action === "hold") url += "/hold";
@@ -69,7 +69,7 @@ export default function Admincal() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:4000/api/admin/invoice/${selectedInvoice._id}`,
+        `${API_URL}/api/admin/invoice/${selectedInvoice._id}`,
         {
           method: "PUT",
           headers: {

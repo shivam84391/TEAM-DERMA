@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { PlusCircleIcon } from "@heroicons/react/24/solid";
 import { Link } from "react-router-dom";
 import axios from "axios";
-
+const API_URL = import.meta.env.VITE_API_URL;
 export default function CreateInvoice() {
   const [products, setProducts] = useState([]);
   const [productForm, setProductForm] = useState({
@@ -120,7 +120,7 @@ export default function CreateInvoice() {
       }
 
       const res = await axios.post(
-        "http://localhost:4000/api/users/addinvoice",
+        `${API_URL}/api/users/addinvoice`,
         invoiceJSON,
         {
           headers: {

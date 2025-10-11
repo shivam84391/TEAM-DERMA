@@ -5,11 +5,14 @@ export default function AdminApproval() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ✅ Vite env variable
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:4000/api/admin/pending-users", {
+        const res = await fetch(`${API_URL}/api/admin/pending-users`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -28,12 +31,12 @@ export default function AdminApproval() {
     };
 
     fetchUsers();
-  }, []);
+  }, [API_URL]);
 
   const handleApproval = async (userId, approve) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:4000/api/admin/approve-user/${userId}`, {
+      const res = await fetch(`${API_URL}/api/admin/approve-user/${userId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -43,7 +46,8 @@ export default function AdminApproval() {
       });
 
       if (!res.ok) throw new Error("Failed to update user status");
-      // update UI
+
+      // Remove user from the list after approval/rejection
       setUsers(users.filter((u) => u._id !== userId));
     } catch (err) {
       console.error("Error updating user:", err);

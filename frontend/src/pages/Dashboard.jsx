@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+const API_URL = import.meta.env.VITE_API_URL;
 import {
   ClipboardDocumentListIcon,
   CheckCircleIcon,
@@ -53,7 +54,7 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:4000/api/users/bills", {
+      const res = await fetch(`${API_URL}/api/users/bills`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -171,7 +172,7 @@ export default function Dashboard() {
     try {
       const token = localStorage.getItem("token");
 
-      await fetch("http://localhost:4000/api/users/logout", {
+      await fetch(`${API_URL}/api/users/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

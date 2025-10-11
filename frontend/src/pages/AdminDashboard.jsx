@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+const API_URL = import.meta.env.VITE_API_URL;
 import {
   ClipboardDocumentListIcon,
   CheckCircleIcon,
@@ -84,7 +85,7 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:4000/api/admin/users", {
+        const res = await fetch(`${API_URL}/api/admin/users`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

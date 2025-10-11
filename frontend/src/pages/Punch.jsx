@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function UserPunch() {
   const token = localStorage.getItem("token");
@@ -12,7 +13,7 @@ export default function UserPunch() {
   // Fetch today's or last punch
   const fetchPunch = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/users/my-punch", {
+      const res = await fetch(`${API_URL}/api/users/my-punch`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -62,7 +63,7 @@ export default function UserPunch() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:4000/api/users/punch-in", {
+      const res = await fetch(`${API_URL}/api/users/punch-in`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -86,7 +87,7 @@ export default function UserPunch() {
 
   const handlePunchOut = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/users/punch-out", {
+      const res = await fetch(`${API_URL}/api/users/punch-out`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
